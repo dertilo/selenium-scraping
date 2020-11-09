@@ -72,7 +72,7 @@ def scrape_date_range(date_from:date,date_to:date,wd,data_path):
     month_to = date_to.month
     day_to = date_to.day
 
-    date_range = f"{year_from}-{month_from}-{date_from}_{year_to}-{month_to}-{day_to}"
+    date_range = f"{year_from}-{month_from}-{day_from}_{year_to}-{month_to}-{day_to}"
     for page in itertools.count(start=0):
         bucket_path = f"{data_path}/{date_range}_{page}"
         url = f"{base_url}/?de=0&se=0&ac=0&ca=0&rs={year_from}%2F{fmt(month_from)}%2F{fmt(day_from)}&re={year_to}%2F{fmt(month_to)}%2F{fmt(day_to)}&st=0&pg={page}"

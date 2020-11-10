@@ -63,7 +63,7 @@ def fmt(x):
     return str(x) if len(str(x))==2 else f"0{str(x)}"
 
 
-def scrape_date_range(date_from:date,date_to:date,wd,data_path):
+def scrape_date_range(date_from:date,date_to:date,wd:WebDriver,data_path):
     year_from = date_from.year
     month_from = date_from.month
     day_from = date_from.day
@@ -79,7 +79,7 @@ def scrape_date_range(date_from:date,date_to:date,wd,data_path):
         bucket_downloads = f"{bucket_path}/downloads"
         os.makedirs(bucket_downloads, exist_ok=True)
 
-        docs_file = f"{bucket_path}/docs.jsonl"
+        docs_file = f"{bucket_path}/docs.jsonl.gz"
         if os.path.isfile(docs_file):
             continue
 

@@ -43,7 +43,7 @@ def scrape_date_range(
         page = wd.page_source
         soup = BeautifulSoup(page, features="html.parser")
         siguiente = soup.find_all("a", string="Siguiente »")
-        if len(siguiente)==0:
+        if len(siguiente) == 0:
             break
         url = f"{base_url}/secretaria/consultat/{siguiente[0].attrs['href']}"
         page = int(url.split("pg=")[-1])
@@ -52,11 +52,13 @@ def scrape_date_range(
         dump_html(data_path, date_from, date_to, wd, page)
 
 
-def dump_html(data_path, date_from, date_to, wd,page=0):
+def dump_html(data_path, date_from, date_to, wd, page=0):
     source = wd.page_source
+    from_to = f"{date_from.strftime('%m-%d-%Y')}-to-{date_to.strftime('%m-%d-%Y')}"
     data_io.write_file(
-        f"{data_path}/hits_{date_from.strftime('%m-%d-%Y')}-to-{date_to.strftime('%m-%d-%Y')}_page_{page}.txt",
-        source)
+        f"{data_path}/hits_{from_to}_page_{page}.txt",
+        source,
+    )
 
 
 def click_it(wd, xpath):

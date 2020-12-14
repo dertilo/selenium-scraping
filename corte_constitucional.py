@@ -3,7 +3,7 @@ import os
 import shutil
 from datetime import timedelta
 from datetime import timedelta, date
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Dict
 
 import pandas
 from bs4 import BeautifulSoup
@@ -32,6 +32,11 @@ class Hit(NamedTuple):
     from_date: str
     to_date: str
     html: str
+
+
+close_button = '//*[@id="cboxClose"]'
+first_row = "/html/body/div[1]/div/table/tbody/tr[2]/td[1]/a"
+next_one = '//*[@id="cboxNext"]'
 
 
 def scrape_date_range(
@@ -113,19 +118,51 @@ def gather_hits(
     scrape_date_range(jobs[0][1], jobs[0][0], wd, data_path, base_url)
 
 
-def process_hits(download_path, data_path):
+import pandas as pd
+
+
+def read_table(html: str) -> List[Dict]:
+    """
+    may be useful later
+    """
+    x = pd.read_html(html)
+    df = x[0]
+    header = df.loc[0].to_list()
+    df = df[1:]
+    df.columns = header
+    x = df.to_dict("records")
+    return x
+
+
+def process_hits(data_path):
+    download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=False)
 
-    hits_files = [file for file in os.listdir(data_path) if file.startswith("hits")]
+    hits_files = [
+        file
+        for file in os.listdir(data_path)
+        if file.startswith("hits") and file.endswith(".jsonl")
+    ]
     for file in hits_files:
-        with open(file, "r") as f:
-            s = f.read()
-        soup = BeautifulSoup(s, features="html.parser")
+        file_name = file.replace("hits_", "details_")
+        data_io.write_jsonl(
+            f"{data_path}/{file_name}", generate_details(data_path, file, wd)
+        )
+
+
+def generate_details(data_path, file, wd):
+    hits = [Hit(**d) for d in data_io.read_jsonl(f"{data_path}/{file}")]
+    for hit in hits:
+        rows = read_table(hit.html)
+        ids = [r["RadicaciónExpediente"].split(" ")[1] for r in rows]
+        for eid in ids:
+            url = f"https://www.corteconstitucional.gov.co/secretaria/actuacion.php?palabra={eid}&proceso=2&sentencia=--"
+            wd.get(url)
+            yield {"id": eid, "html": wd.page_source}
 
 
 if __name__ == "__main__":
     base_url = "https://www.corteconstitucional.gov.co"
     data_path = f"{os.environ['HOME']}/data/corteconstitucional"
-    gather_hits(base_url, data_path)
-
-    # gather_hits()
+    process_hits(data_path)
+    # gather_hits(base_url, data_path)

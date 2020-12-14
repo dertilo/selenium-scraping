@@ -5,6 +5,8 @@ from datetime import timedelta
 from datetime import timedelta, date
 
 import pandas
+from bs4 import BeautifulSoup
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -18,7 +20,6 @@ from common import build_chrome_driver
 def enter_keyboard_input(wd, xpath: str, value: str):
     # wait = WebDriverWait(wd, 10)
     # wait.until(EC.presence_of_element_located((By.xpath(value), "content")))
-    print(value)
     e = wd.find_element_by_xpath(xpath)
     e.send_keys(value)
     e.send_keys(Keys.ENTER)
@@ -36,6 +37,26 @@ def scrape_date_range(
     enter_keyboard_input(wd, '//*[@id="Fechadesde"]', date_from.strftime("%m/%d/%Y"))
     enter_keyboard_input(wd, '//*[@id="Fechahasta"]', date_to.strftime("%m/%d/%Y"))
     click_it(wd, '//*[@id="Buscar"]')
+    dump_html(data_path, date_from, date_to, wd)
+
+    for idx in itertools.count(start=1):
+        page = wd.page_source
+        soup = BeautifulSoup(page, features="html.parser")
+        siguiente = soup.find_all("a", string="Siguiente »")
+        if len(siguiente)==0:
+            break
+        url = f"{base_url}/secretaria/consultat/{siguiente[0].attrs['href']}"
+        page = int(url.split("pg=")[-1])
+        print(f"idx:{idx}; real-page:{page}")
+        wd.get(url)
+        dump_html(data_path, date_from, date_to, wd, page)
+
+
+def dump_html(data_path, date_from, date_to, wd,page=0):
+    source = wd.page_source
+    data_io.write_file(
+        f"{data_path}/hits_{date_from.strftime('%m-%d-%Y')}-to-{date_to.strftime('%m-%d-%Y')}_page_{page}.txt",
+        source)
 
 
 def click_it(wd, xpath):
@@ -57,7 +78,6 @@ def main():
         (d1.date(), (d2 - timedelta(days=1)).date())
         for d1, d2 in zip(dates[:-1], dates[1:])
     ]
-    print(jobs[0])
     scrape_date_range(jobs[0][1], jobs[0][0], wd, data_path, base_url)
 
 

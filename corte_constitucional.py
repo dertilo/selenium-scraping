@@ -3,6 +3,7 @@ import os
 import shutil
 from datetime import timedelta
 from datetime import timedelta, date
+from typing import NamedTuple, List
 
 import pandas
 from bs4 import BeautifulSoup
@@ -25,6 +26,14 @@ def enter_keyboard_input(wd, xpath: str, value: str):
     e.send_keys(Keys.ENTER)
 
 
+class Hit(NamedTuple):
+    url: str
+    page: int
+    from_date: str
+    to_date: str
+    html: str
+
+
 def scrape_date_range(
     date_from: date, date_to: date, wd: WebDriver, data_path, base_url
 ):
@@ -37,11 +46,20 @@ def scrape_date_range(
     enter_keyboard_input(wd, '//*[@id="Fechadesde"]', date_from.strftime("%m/%d/%Y"))
     enter_keyboard_input(wd, '//*[@id="Fechahasta"]', date_to.strftime("%m/%d/%Y"))
     click_it(wd, '//*[@id="Buscar"]')
-    dump_html(data_path, date_from, date_to, wd)
+
+    hits = []
+    hits.append(
+        Hit(
+            url=wd.current_url,
+            page=0,
+            from_date=date_from.strftime("%m/%d/%Y"),
+            to_date=date_to.strftime("%m/%d/%Y"),
+            html=wd.page_source,
+        )._asdict()
+    )
 
     for idx in itertools.count(start=1):
-        page = wd.page_source
-        soup = BeautifulSoup(page, features="html.parser")
+        soup = BeautifulSoup(wd.page_source, features="html.parser")
         siguiente = soup.find_all("a", string="Siguiente »")
         if len(siguiente) == 0:
             break
@@ -49,7 +67,18 @@ def scrape_date_range(
         page = int(url.split("pg=")[-1])
         print(f"idx:{idx}; real-page:{page}")
         wd.get(url)
-        dump_html(data_path, date_from, date_to, wd, page)
+        hits.append(
+            Hit(
+                url=wd.current_url,
+                page=page,
+                from_date=date_from.strftime("%m/%d/%Y"),
+                to_date=date_to.strftime("%m/%d/%Y"),
+                html=wd.page_source,
+            )._asdict()
+        )
+
+    from_to = f"{date_from.strftime('%m-%d-%Y')}-to-{date_to.strftime('%m-%d-%Y')}"
+    data_io.write_jsonl(f"{data_path}/hits_{from_to}.jsonl", hits)
 
 
 def dump_html(data_path, date_from, date_to, wd, page=0):
@@ -66,9 +95,10 @@ def click_it(wd, xpath):
     element.click()
 
 
-def main():
-    base_url = "https://www.corteconstitucional.gov.co"
-    data_path = f"{os.environ['HOME']}/data/corteconstitucional"
+def gather_hits(
+    base_url="https://www.corteconstitucional.gov.co",
+    data_path=f"{os.environ['HOME']}/data/corteconstitucional",
+):
     download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=False)
 
@@ -83,5 +113,19 @@ def main():
     scrape_date_range(jobs[0][1], jobs[0][0], wd, data_path, base_url)
 
 
+def process_hits(download_path, data_path):
+    wd = build_chrome_driver(download_path, headless=False)
+
+    hits_files = [file for file in os.listdir(data_path) if file.startswith("hits")]
+    for file in hits_files:
+        with open(file, "r") as f:
+            s = f.read()
+        soup = BeautifulSoup(s, features="html.parser")
+
+
 if __name__ == "__main__":
-    main()
+    base_url = "https://www.corteconstitucional.gov.co"
+    data_path = f"{os.environ['HOME']}/data/corteconstitucional"
+    gather_hits(base_url, data_path)
+
+    # gather_hits()

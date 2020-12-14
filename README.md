@@ -14,3 +14,8 @@ conda create -n scraping python=3.8 -y
 conda activate scraping
 pip install -r requirements.txt
 ```
+
+### prevent getting blocked
+* [scrapehero](https://www.scrapehero.com/how-to-prevent-getting-blacklisted-while-scraping/)
+* [dev.to](https://dev.to/sonyarianto/user-agent-string-difference-in-puppeteer-headless-and-headful-4aoh)
+* [making-chrome-headless-undetectable](https://intoli.com/blog/making-chrome-headless-undetectable/)

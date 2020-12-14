@@ -2,28 +2,14 @@ import itertools
 import os
 import shutil
 from datetime import timedelta, date
-from typing import Tuple
 
 import pandas
 from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 from util import data_io
-from selenium import webdriver
 from bs4 import BeautifulSoup
 
-
-def build_chrome_driver(dir:str):
-    os.makedirs(dir, exist_ok=True)
-    options = webdriver.ChromeOptions()
-    options.add_argument("headless")
-    prefs = {"download.default_directory": dir}
-    options.add_experimental_option("prefs", prefs)
-
-    driver = webdriver.Chrome(
-        r"/usr/bin/chromedriver", chrome_options=options
-    )  # provide the chromedriver execution path in case of error
-    driver.implicitly_wait(10)  # seconds
-    return driver
+from common import build_chrome_driver
 
 
 def get_hits(page: str):
@@ -104,7 +90,7 @@ if __name__ == "__main__":
     base_url = "http://relatoria.consejodeestado.gov.co"
     data_path = f"{os.environ['HOME']}/data/relatoria_consejodeestado"
     download_path = f"{data_path}/downloads"
-    wd = build_chrome_driver(download_path)
+    wd = build_chrome_driver(download_path,headless=False)
 
 
     dates = list(reversed(pandas.date_range("2010", "2020", freq="1M")+timedelta(days=1)))

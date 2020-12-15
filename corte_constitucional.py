@@ -1,29 +1,14 @@
 import itertools
 import os
-import shutil
-from datetime import timedelta
 from datetime import timedelta, date
 from typing import NamedTuple, List, Dict
 
 import pandas
 from bs4 import BeautifulSoup
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 from util import data_io
-from selenium.webdriver.support import expected_conditions as EC
-from common import build_chrome_driver
-
-
-def enter_keyboard_input(wd, xpath: str, value: str):
-    # wait = WebDriverWait(wd, 10)
-    # wait.until(EC.presence_of_element_located((By.xpath(value), "content")))
-    e = wd.find_element_by_xpath(xpath)
-    e.send_keys(value)
-    e.send_keys(Keys.ENTER)
+from common import build_chrome_driver, enter_keyboard_input, click_it
 
 
 class Hit(NamedTuple):
@@ -93,11 +78,6 @@ def dump_html(data_path, date_from, date_to, wd, page=0):
         f"{data_path}/hits_{from_to}_page_{page}.txt",
         source,
     )
-
-
-def click_it(wd, xpath):
-    element = wd.find_element_by_xpath(xpath)
-    element.click()
 
 
 def gather_hits(

@@ -14,6 +14,10 @@ conda create -n scraping python=3.8 -y
 conda activate scraping
 pip install -r requirements.txt
 ```
+### corteconstitucional
+* [server](https://www.corteconstitucional.gov.co) seems to be down at (colombian) nights for maintenance
+* [__buscador de tutela__](corte_constitucional.py): scraping ids from the `Buscador de tutela` found at [secretaria](https://www.corteconstitucional.gov.co/secretaria/)
+* [edictos](https://www.corteconstitucional.gov.co/secretaria/edictos/)
 
 ### prevent getting blocked
 * [scrapehero](https://www.scrapehero.com/how-to-prevent-getting-blacklisted-while-scraping/)

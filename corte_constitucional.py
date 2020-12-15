@@ -135,6 +135,25 @@ def read_table(html: str) -> List[Dict]:
 
 
 def process_hits(data_path):
+    """
+    once one has "hits" on disk, scraped by "gather_hits"- method one can create urls to detail-page
+    TODO: many actually don't have meaningful details?!
+    """
+
+    def generate_details(data_path, file, wd):
+        """
+        TODO: what does "proceso=2&sentencia=--" mean? is it doing some inappropriate filtering?
+        """
+
+        hits = [Hit(**d) for d in data_io.read_jsonl(f"{data_path}/{file}")]
+        for hit in hits:
+            rows = read_table(hit.html)
+            ids = [r["RadicaciónExpediente"].split(" ")[1] for r in rows]
+            for eid in ids:
+                url = f"https://www.corteconstitucional.gov.co/secretaria/actuacion.php?palabra={eid}&proceso=2&sentencia=--"
+                wd.get(url)
+                yield {"id": eid, "html": wd.page_source}
+
     download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=False)
 
@@ -146,19 +165,8 @@ def process_hits(data_path):
     for file in hits_files:
         file_name = file.replace("hits_", "details_")
         data_io.write_jsonl(
-            f"{data_path}/{file_name}", generate_details(data_path, file, wd)
+            f"{data_path}/{file_name}", tqdm(generate_details(data_path, file, wd))
         )
-
-
-def generate_details(data_path, file, wd):
-    hits = [Hit(**d) for d in data_io.read_jsonl(f"{data_path}/{file}")]
-    for hit in hits:
-        rows = read_table(hit.html)
-        ids = [r["RadicaciónExpediente"].split(" ")[1] for r in rows]
-        for eid in ids:
-            url = f"https://www.corteconstitucional.gov.co/secretaria/actuacion.php?palabra={eid}&proceso=2&sentencia=--"
-            wd.get(url)
-            yield {"id": eid, "html": wd.page_source}
 
 
 if __name__ == "__main__":

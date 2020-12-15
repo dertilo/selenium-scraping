@@ -4,12 +4,15 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 
-def build_chrome_driver(download_dir:str,headless=True):
+def build_chrome_driver(download_dir: str, headless=True):
     os.makedirs(download_dir, exist_ok=True)
     options = webdriver.ChromeOptions()
     if headless:
         options.add_argument("headless")
-    prefs = {"download.default_directory": download_dir}
+    prefs = {
+        "download.default_directory": download_dir,
+        "plugins.always_open_pdf_externally": True, # don't open pdfs in browser but instead download them
+    }
     options.add_experimental_option("prefs", prefs)
 
     driver = webdriver.Chrome(
@@ -19,7 +22,7 @@ def build_chrome_driver(download_dir:str,headless=True):
     return driver
 
 
-def enter_keyboard_input(wd, xpath: str, value: str,clear_it=False):
+def enter_keyboard_input(wd, xpath: str, value: str, clear_it=False):
     # wait = WebDriverWait(wd, 10)
     # wait.until(EC.presence_of_element_located((By.xpath(value), "content")))
     e = wd.find_element_by_xpath(xpath)

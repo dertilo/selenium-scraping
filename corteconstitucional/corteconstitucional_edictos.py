@@ -38,25 +38,28 @@ def download_edictos(
         raw cause they can be pdfs containig one edicto
         or HTMLs containing multiple edictos
         """
-        done_links = set([d["link"] for d in old_docs if not "error" in d])
-        not_done_links = [l for l in hrefs if l not in done_links]
-        print(f"already got: {len(done_links)}")
+        done_docs = {d["href"]:d for d in old_docs if not "error" in d}
+        print(f"already got: {len(done_docs.keys())}")
 
-        for link in tqdm(not_done_links):
-            if not link.endswith(".pdf"):
-                assert not link.startswith("secretaria/edictos/")
-                wd.get(f"https://www.corteconstitucional.gov.co/secretaria/edictos/{link}")
+        for href in tqdm(hrefs):
+            if href in done_docs.keys():
+                datum = done_docs[href]
+            elif not href.endswith(".pdf"):
+                assert not href.startswith("secretaria/edictos/")
+                link = f"https://www.corteconstitucional.gov.co/secretaria/edictos/{href}"
+                wd.get(link)
                 html = wd.page_source
 
-                datum = {"link":link}
+                datum = {"href":href,"link":link}
                 if not is_404(html):
                     datum["html"] = html
                 else:
                     print("document not found!")
                     datum["error"] = "document not found"
             else:
-                wd.get(f"https://www.corteconstitucional.gov.co/{link}")
-                datum = {"link": link, "pdf":link.split("/")[-1]}
+                link = f"https://www.corteconstitucional.gov.co/{href}"
+                wd.get(link)
+                datum = {"href": href, "pdf":href.split("/")[-1],"link":link}
             yield datum
 
     file = f"{download_path}/documents.jsonl"

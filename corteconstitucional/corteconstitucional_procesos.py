@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from util import data_io
 
 from common import build_chrome_driver, click_it, enter_keyboard_input
-from corteconstitucional.corteconstitucional_edictos import generate_ids_from_edictos
 
 DESDE = (
     "/html/body/div[2]/div/div[2]/div/div[11]/div/form/div[2]/div[2]/div/div[1]/input"
@@ -123,6 +122,7 @@ def build_option2id(wd):
 
 
 if __name__ == "__main__":
+    from corteconstitucional.parse_edictos import generate_ids_from_edictos
 
     scrape_proceso_tables(generate_ids_from_edictos())
     """

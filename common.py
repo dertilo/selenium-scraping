@@ -22,14 +22,15 @@ def build_chrome_driver(download_dir: str, headless=True):
     return driver
 
 
-def enter_keyboard_input(wd, xpath: str, value: str, clear_it=False):
+def enter_keyboard_input(wd, xpath: str, value: str, clear_it=False,press_enter=False):
     # wait = WebDriverWait(wd, 10)
     # wait.until(EC.presence_of_element_located((By.xpath(value), "content")))
     e = wd.find_element_by_xpath(xpath)
     if clear_it:
         e.clear()
     e.send_keys(value)
-    e.send_keys(Keys.ENTER)
+    if press_enter:
+        e.send_keys(Keys.ENTER)
 
 
 def click_it(wd, xpath):

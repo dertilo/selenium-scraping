@@ -152,14 +152,14 @@ expediente_pattern = regex.compile(
 )
 
 
-def parse_docs():
-    data_dir = f"{os.environ['HOME']}/data/corteconstitucional/edictos"
-    re.compile(r"expediente ")
+def generate_ids_from_edictos(
+        data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos"
+    ):
+
     for d in data_io.read_jsonl(f"{data_dir}/documents.jsonl"):
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
-            for eid in parse_pdf(pdf_file):
-                yield eid
+            yield from parse_pdf(pdf_file)
 
         elif "html" in d:
             html = d["html"]
@@ -208,7 +208,7 @@ def parse_pdf(pdf_file):
 
 if __name__ == "__main__":
     # download_edictos()
-    ids = list(parse_docs())
+    ids = list(generate_ids_from_edictos())
     print(len(ids))
     print(len(set(ids)))
     assert all([is_valid_id(eid) for eid in ids])

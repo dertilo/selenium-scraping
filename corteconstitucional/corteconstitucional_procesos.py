@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from util import data_io
 
 from common import build_chrome_driver, click_it, enter_keyboard_input
+from corteconstitucional.corteconstitucional_edictos import generate_ids_from_edictos
 
 DESDE = (
     "/html/body/div[2]/div/div[2]/div/div[11]/div/form/div[2]/div[2]/div/div[1]/input"
@@ -29,7 +30,7 @@ def scrape_proceso_tables(search_ids: List[str]):
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     os.makedirs(data_path, exist_ok=True)
     download_path = f"{data_path}/downloads"
-    wd = build_chrome_driver(download_path, headless=False)
+    wd = build_chrome_driver(download_path, headless=True)
 
     for search_id in tqdm(search_ids):
         file = f"{data_path}/{search_id}.json"
@@ -121,4 +122,7 @@ def build_option2id(wd):
 
 if __name__ == "__main__":
 
-    scrape_proceso_tables(data_io.read_lines("/tmp/ids.txt",limit=10))
+    scrape_proceso_tables(generate_ids_from_edictos())
+    """
+    2151it [2:52:30,  4.81s/it]
+    """

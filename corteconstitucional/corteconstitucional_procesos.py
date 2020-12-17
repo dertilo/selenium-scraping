@@ -1,6 +1,10 @@
+import traceback
+
 import os
+import pandas
 from selenium.webdriver.support.select import Select
 from time import sleep
+from tqdm import tqdm
 from typing import List
 
 from bs4 import BeautifulSoup
@@ -27,13 +31,18 @@ def scrape_proceso_tables(search_ids: List[str]):
     download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=False)
 
-    for search_id in search_ids:
+    for search_id in tqdm(search_ids):
         file = f"{data_path}/{search_id}.json"
         if not os.path.isfile(file):
-            fire_search(base_url, search_id, wd)
-            datum = dump_proceso_table(wd)
-            data_io.write_json(file,datum)
-
+            try:
+                fire_search(base_url, search_id, wd)
+                datum = dump_proceso_table(wd)
+                datum["id"]=search_id
+                data_io.write_json(file,datum)
+            except BaseException as e:
+                # traceback.print_stack()
+                # raise e
+                print(f"{search_id} fucked it up!")
 
 def dump_proceso_table(wd):
     click_it(wd, FIRST_ROW_POPUP)
@@ -42,6 +51,7 @@ def dump_proceso_table(wd):
     # wd.switch_to.frame(0)
     html = wd.page_source
     soup = BeautifulSoup(html, features="html.parser")
+    # df = pandas.read_html(html)[0]
     title = soup.find_all("title")[0].text
     assert "Proceso" in title
     name = "-".join([s for s in title.split(" ") if len(s) > 0])

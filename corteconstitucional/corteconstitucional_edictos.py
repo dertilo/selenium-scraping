@@ -33,7 +33,7 @@ def get_hrefs(url, wd):
     return hrefs
 
 
-def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir,redo_errors=False):
+def generate_raw_docs(old_docs: List[Dict], not_yet_done_hrefs:List[str], wd, download_dir, redo_errors=False):
     """
     raw cause they can be pdfs containig one edicto
     or HTMLs containing multiple edictos
@@ -43,11 +43,12 @@ def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir,redo_errors=
     done_docs = {d["href"]: d for d in old_docs if filter_done_docs(d)}
 
     print(f"already got: {len(done_docs.keys())}")
+    not_yet_done_hrefs = [h for h in not_yet_done_hrefs if h not in done_docs.keys()]
+    for href,doc in tqdm(done_docs.items()):
+        yield doc
 
-    for href in tqdm(hrefs):
-        if href in done_docs.keys():
-            datum = done_docs[href]
-        elif not href.endswith(".pdf"):
+    for href in tqdm(not_yet_done_hrefs):
+        if not href.endswith(".pdf"):
             assert not href.startswith("secretaria/edictos/")
             link = f"https://www.corteconstitucional.gov.co/secretaria/edictos/{href}"
             wd.get(link)

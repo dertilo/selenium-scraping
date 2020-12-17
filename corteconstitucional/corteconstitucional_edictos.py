@@ -142,10 +142,13 @@ def download_edictos(
 
 
 valid_id_pattern = re.compile(r"\w{1,5}-\d{1,10}")
+# fmt: off
+abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "CJU", "RPZ", "RDL"]
+# fmt: on
 
 # expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
 expediente_pattern = regex.compile(
-    r"(?<=expediente.{1,100})(?:D|LAT|RE|OG)\s?-?\s?\d{1,9}"
+    rf"(?<=expediente.{{1,100}})(?:{'|'.join(abbreviations)})\s?-?\s?\d{{1,9}}"
 )
 
 
@@ -207,9 +210,10 @@ if __name__ == "__main__":
     # download_edictos()
     ids = list(parse_docs())
     print(len(ids))
+    print(len(set(ids)))
     assert all([is_valid_id(eid) for eid in ids])
-    # print(set(eid.split("-")[0] for eid in ids))
-    data_io.write_lines("/tmp/ids.txt", ids)
+    print(set(eid.split("-")[0] for eid in ids))
+    # data_io.write_lines("/tmp/ids.txt", ids)
 
     """
     got 2151 ids

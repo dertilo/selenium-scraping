@@ -1,3 +1,5 @@
+import traceback
+
 from time import sleep
 
 import os
@@ -16,7 +18,7 @@ from common import build_chrome_driver
 
 
 def is_404(html):
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, features="html.parser")
     h2 = soup.find_all("h2")
     if len(h2) == 0:
         return False
@@ -31,12 +33,15 @@ def get_hrefs(url, wd):
     return hrefs
 
 
-def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir):
+def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir,redo_errors=False):
     """
     raw cause they can be pdfs containig one edicto
     or HTMLs containing multiple edictos
     """
-    done_docs = {d["href"]: d for d in old_docs if not "error" in d}
+    def filter_done_docs(d):
+        return ("error" not in d) if redo_errors else True
+    done_docs = {d["href"]: d for d in old_docs if filter_done_docs(d)}
+
     print(f"already got: {len(done_docs.keys())}")
 
     for href in tqdm(hrefs):
@@ -47,13 +52,10 @@ def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir):
             link = f"https://www.corteconstitucional.gov.co/secretaria/edictos/{href}"
             wd.get(link)
             sleep(0.5)
-            _ = wd.find_element_by_xpath(
-                '//*[@id="logo"]'
-            )  # just to trigger implicit wait
-            html = wd.page_source
+            is_valid, html = get_valid_html(link, wd)
 
             datum = {"href": href, "link": link}
-            if not is_404(html):
+            if is_valid:
                 datum["html"] = html
             else:
                 print("document not found!")
@@ -61,9 +63,8 @@ def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir):
         else:
             link = f"https://www.corteconstitucional.gov.co/{href}"
             wd.get(link)
-            sleep(
-                1
-            )  # TODO(tilo): I don't know (yet) how to wait for the download to finish!
+            # TODO(tilo): I don't know (yet) how to wait for the download to finish!
+            sleep(1)
 
             original_pdf_name = href.split("/")[-1]
             pdf_file_name = original_pdf_name.replace(" ", "_")
@@ -75,6 +76,19 @@ def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir):
         yield datum
 
 
+def get_valid_html(link, wd):
+    try:  # just to trigger implicit wait
+        _ = wd.find_element_by_xpath('//*[@id="logo"]')
+        found_logo = True
+    except BaseException:  # this is actually expected behavior cause there are many hrefs that lead to invalid links!
+        print(f"{link}: has no logo?!?")
+        found_logo = False
+
+    html = wd.page_source
+    is_valid = (not is_404(html)) and found_logo
+    return is_valid, html
+
+
 def download_edictos(
     data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
 ):
@@ -82,8 +96,8 @@ def download_edictos(
     download_dir = f"{data_dir}/downloads"
     os.makedirs(download_dir, exist_ok=True)
 
-    wd = build_chrome_driver(download_dir, headless=False)
-    hrefs = get_hrefs(url, wd)[:10]
+    wd = build_chrome_driver(download_dir, headless=True)
+    hrefs = get_hrefs(url, wd)
 
     old_file = f"{data_dir}/documents.jsonl"
     found_existing_documents = os.path.isfile(old_file)
@@ -93,9 +107,14 @@ def download_edictos(
     else:
         old_docs = []
         new_file = old_file
-    data_io.write_jsonl(new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir))
-    if found_existing_documents:
-        shutil.move(new_file, old_file)
+    try:
+        data_io.write_jsonl(new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir))
+    except BaseException:
+        traceback.print_exc()
+        print("shit happened")
+    finally:
+        if found_existing_documents:
+            shutil.move(new_file, old_file)
     """
     100%|██████████| 149/149 [01:00<00:00,  2.47it/s]
     148

@@ -139,10 +139,7 @@ def download_edictos(
     finally:
         if found_existing_documents:
             shutil.move(new_file, old_file)
-    """
-    100%|██████████| 149/149 [01:00<00:00,  2.47it/s]
-    148
-    """
+
 
 
 valid_id_pattern = re.compile(r"\w{1,5}-\d{1,10}")
@@ -154,8 +151,8 @@ def parse_docs():
     for d in data_io.read_jsonl(f"{data_dir}/documents.jsonl"):
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
-            eid = parse_pdf(pdf_file)
-            yield eid
+            for eid in parse_pdf(pdf_file):
+                yield eid
 
         elif "html" in d:
             html = d["html"]
@@ -168,24 +165,29 @@ def parse_docs():
 def is_valid_id(s):
     return valid_id_pattern.match(s) is not None
 
-expediente_pattern = re.compile(r"expediente\s{1,10}\w{1,5}-?\s?\d{1,10}")
+
+expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}")
+
 missing_dash = re.compile(r"\w{1,5}\d{1,10}")
+
+exceptions = ["EDICTO_PUBLICADO_EN_PROCESO_DISCIPLINARIO_001-2018.pdf"]
 
 
 def parse_pdf(pdf_file):
     bytes = textract.process(pdf_file)
     text = bytes.decode("utf-8").replace("\n", " ")
     matches = expediente_pattern.findall(text)
-    if len(matches) == 0 :
+    if len(matches) == 0 and pdf_file.split("/")[-1] not in exceptions:
         assert False
+
     def get_id(match):
-        eid = re.sub(r"expediente\s{1,10}", "", match)
-        eid = eid.replace(" ","")
+        eid = match.replace(" ", "")
         if missing_dash.match(eid) is not None:
             letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
             numbers = regex.compile(r"\d{1,9}").findall(eid)[0]
             eid = f"{letters}-{numbers}"
         return eid
+
     # html_lines = exec_command(f"pdftohtml -noframes -stdout '{pdf_file}'")["stdout"]
     # html = "\n".join([l.decode("utf-8") for l in html_lines])
     # soup = BeautifulSoup(html, features="html.parser")
@@ -196,4 +198,4 @@ def parse_pdf(pdf_file):
 
 if __name__ == "__main__":
     # download_edictos()
-    data_io.write_lines("/tmp/ids.txt", (eid for ids in parse_docs() for eid in ids))
+    data_io.write_lines("/tmp/ids.txt", parse_docs())

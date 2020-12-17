@@ -65,16 +65,17 @@ def download_edictos(
                 datum = {"href": href, "pdf": href.split("/")[-1], "link": link}
             yield datum
 
-    file = f"{download_path}/documents.jsonl"
-    if os.path.isfile(file):
-        new_file = file.split(".jsonl")[0] + "_updated.jsonl"
-        old_docs = list(data_io.read_jsonl(file))
+    old_file = f"{download_path}/documents.jsonl"
+    found_existing_documents = os.path.isfile(old_file)
+    if found_existing_documents:
+        new_file = old_file.split(".jsonl")[0] + "_updated.jsonl"
+        old_docs = list(data_io.read_jsonl(old_file))
     else:
         old_docs = []
-        new_file = file
+        new_file = old_file
     data_io.write_jsonl(new_file, generate_raw_docs(old_docs))
-    if new_file != file:
-        shutil.move(new_file, file)
+    if found_existing_documents:
+        shutil.move(new_file, old_file)
     """
     100%|██████████| 149/149 [01:00<00:00,  2.47it/s]
     148
@@ -111,9 +112,24 @@ def parse_pdf(pdf_file):
     # soup = BeautifulSoup(html, features="html.parser")
     return eid
 
-def fix_pdf_file_names():
-    raise NotImplementedError
+def fix_pdf_file_names(
+        download_path=f"{os.environ['HOME']}/data/corteconstitucional/edictos"
+    ):
+    fixed_path = f"{download_path}_fixed"
+    os.makedirs(fixed_path,exist_ok=True)
+
+    def fix_doc(doc:Dict):
+        if "pdf" in doc:
+            pdf_file_name = doc["pdf"].replace(" ", "_")
+            shutil.copy(f"{download_path}/{doc['pdf']}",f"{fixed_path}/{pdf_file_name}")
+            doc["pdf"] = pdf_file_name
+        return doc
+    docs_file = f"{download_path}/documents.jsonl"
+    docs = list(data_io.read_jsonl(docs_file))
+    data_io.write_jsonl(f"{fixed_path}/documents.jsonl",(fix_doc(d) for d in docs))
+
 
 if __name__ == "__main__":
     # download_edictos()
-    data_io.write_lines("/tmp/ids.txt", parse_docs())
+    fix_pdf_file_names()
+    # data_io.write_lines("/tmp/ids.txt", parse_docs())

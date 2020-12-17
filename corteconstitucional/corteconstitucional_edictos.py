@@ -24,48 +24,68 @@ def is_404(html):
         return h2[0].text == "404 - File or directory not found."
 
 
-def download_edictos(
-    download_path=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
-):
-    url = "https://www.corteconstitucional.gov.co/secretaria/edictos/"
-    wd = build_chrome_driver(download_path, headless=False)
+def get_hrefs(url, wd):
     wd.get(url)
     soup = BeautifulSoup(wd.page_source, features="html.parser")
     hrefs = list(set([x.attrs["href"] for x in soup.find_all("a") if x.attrs["href"]]))
+    return hrefs
 
-    def generate_raw_docs(old_docs: List[Dict]):
-        """
-        raw cause they can be pdfs containig one edicto
-        or HTMLs containing multiple edictos
-        """
-        done_docs = {d["href"]: d for d in old_docs if not "error" in d}
-        print(f"already got: {len(done_docs.keys())}")
 
-        for href in tqdm(hrefs):
-            if href in done_docs.keys():
-                datum = done_docs[href]
-            elif not href.endswith(".pdf"):
-                assert not href.startswith("secretaria/edictos/")
-                link = (
-                    f"https://www.corteconstitucional.gov.co/secretaria/edictos/{href}"
-                )
-                wd.get(link)
-                sleep(0.5)
-                html = wd.page_source
+def generate_raw_docs(old_docs: List[Dict], hrefs, wd, download_dir):
+    """
+    raw cause they can be pdfs containig one edicto
+    or HTMLs containing multiple edictos
+    """
+    done_docs = {d["href"]: d for d in old_docs if not "error" in d}
+    print(f"already got: {len(done_docs.keys())}")
 
-                datum = {"href": href, "link": link}
-                if not is_404(html):
-                    datum["html"] = html
-                else:
-                    print("document not found!")
-                    datum["error"] = "document not found"
+    for href in tqdm(hrefs):
+        if href in done_docs.keys():
+            datum = done_docs[href]
+        elif not href.endswith(".pdf"):
+            assert not href.startswith("secretaria/edictos/")
+            link = f"https://www.corteconstitucional.gov.co/secretaria/edictos/{href}"
+            wd.get(link)
+            sleep(0.5)
+            _ = wd.find_element_by_xpath(
+                '//*[@id="logo"]'
+            )  # just to trigger implicit wait
+            html = wd.page_source
+
+            datum = {"href": href, "link": link}
+            if not is_404(html):
+                datum["html"] = html
             else:
-                link = f"https://www.corteconstitucional.gov.co/{href}"
-                wd.get(link)
-                datum = {"href": href, "pdf": href.split("/")[-1], "link": link}
-            yield datum
+                print("document not found!")
+                datum["error"] = "document not found"
+        else:
+            link = f"https://www.corteconstitucional.gov.co/{href}"
+            wd.get(link)
+            sleep(
+                1
+            )  # TODO(tilo): I don't know (yet) how to wait for the download to finish!
 
-    old_file = f"{download_path}/documents.jsonl"
+            original_pdf_name = href.split("/")[-1]
+            pdf_file_name = original_pdf_name.replace(" ", "_")
+            shutil.move(
+                f"{download_dir}/{original_pdf_name}", f"{download_dir}/{pdf_file_name}"
+            )
+
+            datum = {"href": href, "pdf": pdf_file_name, "link": link}
+        yield datum
+
+
+def download_edictos(
+    data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
+):
+    url = "https://www.corteconstitucional.gov.co/secretaria/edictos/"
+    download_dir = f"{data_dir}/downloads"
+    os.makedirs(download_dir, exist_ok=True)
+
+    wd = build_chrome_driver(download_dir, headless=False)
+    hrefs = get_hrefs(url, wd)[:10]
+
+    old_file = f"{data_dir}/documents.jsonl"
     found_existing_documents = os.path.isfile(old_file)
     if found_existing_documents:
         new_file = old_file.split(".jsonl")[0] + "_updated.jsonl"
@@ -73,7 +93,7 @@ def download_edictos(
     else:
         old_docs = []
         new_file = old_file
-    data_io.write_jsonl(new_file, generate_raw_docs(old_docs))
+    data_io.write_jsonl(new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir))
     if found_existing_documents:
         shutil.move(new_file, old_file)
     """
@@ -87,7 +107,7 @@ def parse_docs():
     re.compile(r"expediente ")
     for d in data_io.read_jsonl(f"{download_path}/documents.jsonl"):
         if "pdf" in d:
-            pdf_file = f"{download_path}/{d['pdf']}".replace(" ","\ ")
+            pdf_file = f"{download_path}/{d['pdf']}".replace(" ", "\ ")
             eid = parse_pdf(pdf_file)
             yield eid
 
@@ -112,24 +132,28 @@ def parse_pdf(pdf_file):
     # soup = BeautifulSoup(html, features="html.parser")
     return eid
 
-def fix_pdf_file_names(
-        download_path=f"{os.environ['HOME']}/data/corteconstitucional/edictos"
-    ):
-    fixed_path = f"{download_path}_fixed"
-    os.makedirs(fixed_path,exist_ok=True)
 
-    def fix_doc(doc:Dict):
+def fix_pdf_file_names(
+    download_path=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
+):
+    fixed_path = f"{download_path}_fixed"
+    os.makedirs(fixed_path, exist_ok=True)
+
+    def fix_doc(doc: Dict):
         if "pdf" in doc:
             pdf_file_name = doc["pdf"].replace(" ", "_")
-            shutil.copy(f"{download_path}/{doc['pdf']}",f"{fixed_path}/{pdf_file_name}")
+            shutil.copy(
+                f"{download_path}/{doc['pdf']}", f"{fixed_path}/{pdf_file_name}"
+            )
             doc["pdf"] = pdf_file_name
         return doc
+
     docs_file = f"{download_path}/documents.jsonl"
     docs = list(data_io.read_jsonl(docs_file))
-    data_io.write_jsonl(f"{fixed_path}/documents.jsonl",(fix_doc(d) for d in docs))
+    data_io.write_jsonl(f"{fixed_path}/documents.jsonl", (fix_doc(d) for d in docs))
 
 
 if __name__ == "__main__":
-    # download_edictos()
-    fix_pdf_file_names()
+    download_edictos()
+    # fix_pdf_file_names()
     # data_io.write_lines("/tmp/ids.txt", parse_docs())

@@ -19,7 +19,7 @@ abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "
 expediente_code = rf"(?:{'|'.join(abbreviations)})\s?-?\s?\d{{1,9}}"
 expediente_pattern = regex.compile(rf"(?<=expediente.{{1,100}}){expediente_code}")
 
-sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,9}}"
+sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}/\d{{1,4}}"
 sentencia_pattern = regex.compile(rf"(?<=Sentencia.{{1,100}}){sentencia_code}")
 fecha_sentencia_expediente_pattern = regex.compile(rf"Sentencia C-569/19")
 # fmt: on
@@ -31,6 +31,8 @@ def is_valid_expediente(s):
 class Edicto:
     sentencia:str
     expedientes:List[str]
+    source:str
+
 
     def __hash__(self):
         return hash((self.sentencia, *self.expedientes))
@@ -41,8 +43,8 @@ def extract_expedientes(string:str):
     assert all([is_valid_expediente(eid) for eid in ids])
     return ids
 
-def extract_data(string:str)->Generator[Edicto,None,None]:
-    matches = sentencia_pattern.finditer(string)
+def extract_data(source:str,string:str)->Generator[Edicto,None,None]:
+    matches = list(sentencia_pattern.finditer(string))
     spans = [(m.start(),m.end(),m.group()) for m in matches]
     for k,(start, end, sentencia) in enumerate(spans):
         next_start,*_ = spans[k+1] if k+1 < len(spans) else (len(string),)
@@ -50,7 +52,7 @@ def extract_data(string:str)->Generator[Edicto,None,None]:
         behind_sentencia = string[end:next_start]
         expedientes = extract_expedientes(behind_sentencia)
         if len(expedientes)>0:
-            yield Edicto(sentencia,expedientes)
+            yield Edicto(sentencia,expedientes,source)
 
 def generate_edictos(
         data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos"
@@ -60,14 +62,11 @@ def generate_edictos(
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
             text = parse_pdf(pdf_file)
+            yield from extract_data(d["href"],text)
 
         elif "html" in d:
             text = d["html"]
-        else:
-            text = None
-
-        if text is not None:
-            yield from extract_data(text)
+            yield from extract_data(d["href"],text)
 
 
 

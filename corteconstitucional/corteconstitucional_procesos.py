@@ -122,9 +122,9 @@ def build_option2id(wd):
 
 
 if __name__ == "__main__":
-    from corteconstitucional.parse_edictos import generate_ids_from_edictos
+    from corteconstitucional.parse_edictos import generate_edictos
 
-    scrape_proceso_tables(generate_ids_from_edictos())
+    scrape_proceso_tables((eid for e in generate_edictos() for eid in e.expedientes))
     """
     2151it [2:52:30,  4.81s/it]
     """

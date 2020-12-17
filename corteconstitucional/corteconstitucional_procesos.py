@@ -26,6 +26,8 @@ BUSCADOR_DE_PROCESOS = '//*[@id="nav-tabs-wrapper"]/li[13]'
 
 
 def scrape_proceso_tables(search_ids: List[str]):
+    search_ids = list(set(search_ids))
+    print(f"got {len(search_ids)} unique ids")
     base_url = "https://www.corteconstitucional.gov.co/secretaria/"
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     os.makedirs(data_path, exist_ok=True)

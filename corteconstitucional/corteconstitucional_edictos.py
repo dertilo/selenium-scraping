@@ -1,5 +1,6 @@
 import traceback
 
+import regex
 from time import sleep
 
 import os
@@ -33,18 +34,26 @@ def get_hrefs(url, wd):
     return hrefs
 
 
-def generate_raw_docs(old_docs: List[Dict], not_yet_done_hrefs:List[str], wd, download_dir, redo_errors=False):
+def generate_raw_docs(
+    old_docs: List[Dict],
+    not_yet_done_hrefs: List[str],
+    wd,
+    download_dir,
+    redo_errors=False,
+):
     """
     raw cause they can be pdfs containig one edicto
     or HTMLs containing multiple edictos
     """
+
     def filter_done_docs(d):
         return ("error" not in d) if redo_errors else True
+
     done_docs = {d["href"]: d for d in old_docs if filter_done_docs(d)}
 
     print(f"already got: {len(done_docs.keys())}")
     not_yet_done_hrefs = [h for h in not_yet_done_hrefs if h not in done_docs.keys()]
-    for href,doc in tqdm(done_docs.items()):
+    for href, doc in tqdm(done_docs.items()):
         yield doc
 
     for href in tqdm(not_yet_done_hrefs):
@@ -67,13 +76,14 @@ def generate_raw_docs(old_docs: List[Dict], not_yet_done_hrefs:List[str], wd, do
 
             wd.get(link)
             # TODO(tilo): I don't know (yet) how to wait for the download to finish!
-            sleep(2) # how long to wait?
+            sleep(2)  # how long to wait?
 
             original_pdf_name = href.split("/")[-1]
             pdf_file_name = original_pdf_name.replace(" ", "_")
             try:
                 shutil.move(
-                    f"{download_dir}/{original_pdf_name}", f"{download_dir}/{pdf_file_name}"
+                    f"{download_dir}/{original_pdf_name}",
+                    f"{download_dir}/{pdf_file_name}",
                 )
                 datum["pdf"] = pdf_file_name
 
@@ -120,7 +130,9 @@ def download_edictos(
         old_docs = []
         new_file = old_file
     try:
-        data_io.write_jsonl(new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir))
+        data_io.write_jsonl(
+            new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir)
+        )
     except BaseException:
         traceback.print_exc()
         print("shit happened")
@@ -133,12 +145,15 @@ def download_edictos(
     """
 
 
+valid_id_pattern = re.compile(r"\w{1,5}-\d{1,10}")
+
+
 def parse_docs():
-    download_path = f"{os.environ['HOME']}/data/corteconstitucional/edictos"
+    data_dir = f"{os.environ['HOME']}/data/corteconstitucional/edictos"
     re.compile(r"expediente ")
-    for d in data_io.read_jsonl(f"{download_path}/documents.jsonl"):
+    for d in data_io.read_jsonl(f"{data_dir}/documents.jsonl"):
         if "pdf" in d:
-            pdf_file = f"{download_path}/{d['pdf']}".replace(" ", "\ ")
+            pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
             eid = parse_pdf(pdf_file)
             yield eid
 
@@ -146,45 +161,39 @@ def parse_docs():
             html = d["html"]
             expediente_and_id = r"expediente\s{1,10}[<>\w]{1,8}\w{1,5}-\d{1,10}"
             for match in re.compile(expediente_and_id).findall(html):
-                eid = re.compile(r"\w{1,5}-\d{1,10}").search(match).group()
+                eid = valid_id_pattern.search(match).group()
                 yield eid
 
 
+def is_valid_id(s):
+    return valid_id_pattern.match(s) is not None
+
+expediente_pattern = re.compile(r"expediente\s{1,10}\w{1,5}-?\s?\d{1,10}")
+missing_dash = re.compile(r"\w{1,5}\d{1,10}")
+
+
 def parse_pdf(pdf_file):
-    text = textract.process(pdf_file)
-    match = (
-        re.compile(r"expediente\s{1,10}\w{1,5}-\d{1,10}")
-        .search(text.decode("utf-8"))
-        .group()
-    )
-    eid = re.sub(r"expediente\s{1,10}", "", match)
+    bytes = textract.process(pdf_file)
+    text = bytes.decode("utf-8").replace("\n", " ")
+    matches = expediente_pattern.findall(text)
+    if len(matches) == 0 :
+        assert False
+    def get_id(match):
+        eid = re.sub(r"expediente\s{1,10}", "", match)
+        eid = eid.replace(" ","")
+        if missing_dash.match(eid) is not None:
+            letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
+            numbers = regex.compile(r"\d{1,9}").findall(eid)[0]
+            eid = f"{letters}-{numbers}"
+        return eid
     # html_lines = exec_command(f"pdftohtml -noframes -stdout '{pdf_file}'")["stdout"]
     # html = "\n".join([l.decode("utf-8") for l in html_lines])
     # soup = BeautifulSoup(html, features="html.parser")
-    return eid
-
-
-def fix_pdf_file_names(
-    download_path=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
-):
-    fixed_path = f"{download_path}_fixed"
-    os.makedirs(fixed_path, exist_ok=True)
-
-    def fix_doc(doc: Dict):
-        if "pdf" in doc:
-            pdf_file_name = doc["pdf"].replace(" ", "_")
-            shutil.copy(
-                f"{download_path}/{doc['pdf']}", f"{fixed_path}/{pdf_file_name}"
-            )
-            doc["pdf"] = pdf_file_name
-        return doc
-
-    docs_file = f"{download_path}/documents.jsonl"
-    docs = list(data_io.read_jsonl(docs_file))
-    data_io.write_jsonl(f"{fixed_path}/documents.jsonl", (fix_doc(d) for d in docs))
+    ids = [get_id(m) for m in matches]
+    assert all([is_valid_id(eid) for eid in ids])
+    return ids
 
 
 if __name__ == "__main__":
-    download_edictos()
-    # fix_pdf_file_names()
-    # data_io.write_lines("/tmp/ids.txt", parse_docs())
+    # download_edictos()
+    data_io.write_lines("/tmp/ids.txt", (eid for ids in parse_docs() for eid in ids))

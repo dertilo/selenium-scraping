@@ -141,8 +141,12 @@ def download_edictos(
             shutil.move(new_file, old_file)
 
 
-
 valid_id_pattern = re.compile(r"\w{1,5}-\d{1,10}")
+
+# expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
+expediente_pattern = regex.compile(
+    r"(?<=expediente.{1,100})(?:D|LAT|RE|OG)\s?-?\s?\d{1,9}"
+)
 
 
 def parse_docs():
@@ -156,9 +160,9 @@ def parse_docs():
 
         elif "html" in d:
             html = d["html"]
-            expediente_and_id = r"expediente\s{1,10}[<>\w]{1,8}\w{1,5}-\d{1,10}"
-            for match in re.compile(expediente_and_id).findall(html):
-                eid = valid_id_pattern.search(match).group()
+            for eid in expediente_pattern.findall(html):
+                eid = fix_id(eid)
+                assert is_valid_id(eid)
                 yield eid
 
 
@@ -166,11 +170,18 @@ def is_valid_id(s):
     return valid_id_pattern.match(s) is not None
 
 
-expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}")
-
 missing_dash = re.compile(r"\w{1,5}\d{1,10}")
 
 exceptions = ["EDICTO_PUBLICADO_EN_PROCESO_DISCIPLINARIO_001-2018.pdf"]
+
+
+def fix_id(eid: str):
+    eid = eid.replace(" ", "").replace("\n", "")
+    if missing_dash.match(eid) is not None:
+        letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
+        numbers = regex.compile(r"\d{1,9}").findall(eid)[0]
+        eid = f"{letters}-{numbers}"
+    return eid
 
 
 def parse_pdf(pdf_file):
@@ -181,11 +192,7 @@ def parse_pdf(pdf_file):
         assert False
 
     def get_id(match):
-        eid = match.replace(" ", "")
-        if missing_dash.match(eid) is not None:
-            letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
-            numbers = regex.compile(r"\d{1,9}").findall(eid)[0]
-            eid = f"{letters}-{numbers}"
+        eid = fix_id(match)
         return eid
 
     # html_lines = exec_command(f"pdftohtml -noframes -stdout '{pdf_file}'")["stdout"]
@@ -198,4 +205,12 @@ def parse_pdf(pdf_file):
 
 if __name__ == "__main__":
     # download_edictos()
-    data_io.write_lines("/tmp/ids.txt", parse_docs())
+    ids = list(parse_docs())
+    print(len(ids))
+    assert all([is_valid_id(eid) for eid in ids])
+    # print(set(eid.split("-")[0] for eid in ids))
+    data_io.write_lines("/tmp/ids.txt", ids)
+
+    """
+    got 2151 ids
+    """

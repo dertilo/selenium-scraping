@@ -26,12 +26,16 @@ def scrape_proceso_tables(search_ids: List[str]):
     os.makedirs(data_path, exist_ok=True)
     download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=False)
+
     for search_id in search_ids:
-        fire_search(base_url, search_id, wd)
-        dump_proceso_table(wd, data_path)
+        file = f"{data_path}/{search_id}.json"
+        if not os.path.isfile(file):
+            fire_search(base_url, search_id, wd)
+            datum = dump_proceso_table(wd)
+            data_io.write_json(file,datum)
 
 
-def dump_proceso_table(wd, data_path):
+def dump_proceso_table(wd):
     click_it(wd, FIRST_ROW_POPUP)
     wd.switch_to.frame(0)
     click_it(wd, POPUP_REFRESH_BUTTON)
@@ -41,10 +45,8 @@ def dump_proceso_table(wd, data_path):
     title = soup.find_all("title")[0].text
     assert "Proceso" in title
     name = "-".join([s for s in title.split(" ") if len(s) > 0])
-    data_io.write_json(f"{data_path}/{name}.json", {"name": name, "html": html})
     wd.switch_to.parent_frame()
-    # click_it(wd, '/html/body/table/tbody/tr/td[6]/a')
-    # click_it(wd,'//*[@id="cboxClose"]')
+    return {"name": name, "html": html}
 
 
 abbrev2name = {
@@ -109,4 +111,4 @@ def build_option2id(wd):
 
 if __name__ == "__main__":
 
-    scrape_proceso_tables(data_io.read_lines("/tmp/ids.txt"))
+    scrape_proceso_tables(data_io.read_lines("/tmp/ids.txt",limit=10))

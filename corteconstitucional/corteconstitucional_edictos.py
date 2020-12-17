@@ -63,17 +63,23 @@ def generate_raw_docs(old_docs: List[Dict], not_yet_done_hrefs:List[str], wd, do
                 datum["error"] = "document not found"
         else:
             link = f"https://www.corteconstitucional.gov.co/{href}"
+            datum = {"href": href, "link": link}
+
             wd.get(link)
             # TODO(tilo): I don't know (yet) how to wait for the download to finish!
-            sleep(1)
+            sleep(2) # how long to wait?
 
             original_pdf_name = href.split("/")[-1]
             pdf_file_name = original_pdf_name.replace(" ", "_")
-            shutil.move(
-                f"{download_dir}/{original_pdf_name}", f"{download_dir}/{pdf_file_name}"
-            )
+            try:
+                shutil.move(
+                    f"{download_dir}/{original_pdf_name}", f"{download_dir}/{pdf_file_name}"
+                )
+                datum["pdf"] = pdf_file_name
 
-            datum = {"href": href, "pdf": pdf_file_name, "link": link}
+            except BaseException:
+                datum["error"] = "pdf not found"
+                print(f"could not find {href}")
         yield datum
 
 
@@ -93,6 +99,11 @@ def get_valid_html(link, wd):
 def download_edictos(
     data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
 ):
+    """
+    needs to be run several times, some times it claims that it cannot find downloaded pdfs,
+    :param data_dir:
+    :return:
+    """
     url = "https://www.corteconstitucional.gov.co/secretaria/edictos/"
     download_dir = f"{data_dir}/downloads"
     os.makedirs(download_dir, exist_ok=True)

@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # edictos_file = f"{os.environ['HOME']}/data/corteconstitucional/edictos/documents.jsonl"
     # edictos = {d:d for d in data_io.read_jsonl(edictos_file)}
     edictos: List[Edicto] = list(tqdm(generate_edictos()))
-    exp2edicto = {e.expedientes[0]: e for e in edictos}
+    exp2edicto = {exp: e for e in edictos for exp in e.expedientes}
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     raw_data = (
         data_io.read_json(str(file)) for file in tqdm(Path(data_path).glob("*.json"))
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     notfound_expedientes = [
         t.expediente for t in table_data if t.expediente not in exp2edicto.keys()
     ]
+    print(f"cound not find {len(notfound_expedientes)} expedientes")
     data_io.write_lines("/tmp/notfound_expedientes.txt", notfound_expedientes)
     data_io.write_jsonl(
         "/tmp/merge.jsonl",

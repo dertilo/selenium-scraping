@@ -1,5 +1,8 @@
 from collections import Counter
 from dataclasses import dataclass, asdict
+from datetime import datetime
+
+import regex
 from typing import List
 
 from pprint import pprint
@@ -18,8 +21,19 @@ from corteconstitucional.parse_edictos import generate_edictos, Edicto
 class TableDatum:
     expediente: str
     fijacion: str
-    radication: str
+    radicacion: str
     aprobacion: str
+
+
+month_pattern = regex.compile(r"[A-Za-z]{1,4}")
+
+def parse_date(s: str):
+    month = month_pattern.search(s).group()
+    map = {"Abr": "Apr", "Ago": "Aug", "Dic": "Dec", "Ene": "Jan"}
+    mapped_month = map.get(month, month)
+    normalized_date_s = s.replace(month, mapped_month)
+    date = datetime.strptime(normalized_date_s, "%b %d %Y")
+    return date.strftime("%m/%d/%Y")
 
 
 def build_table_datum(d):
@@ -33,7 +47,13 @@ def build_table_datum(d):
     fijacion = kv.get("Fallo.Fijación Edicto", None)
     aprobacion = kv.get("Fallo.Aprobación Proyecto", None)
     radicacion = kv.get("Radicación")
-    return TableDatum(d["id"], fijacion, aprobacion, radicacion)
+    return TableDatum(
+        d["id"],
+        *[
+            parse_date(s) if s is not None else None
+            for s in [fijacion, aprobacion, radicacion]
+        ],
+    )
 
 
 if __name__ == "__main__":

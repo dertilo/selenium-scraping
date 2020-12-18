@@ -23,9 +23,15 @@ expediente_pattern = regex.compile(rf"(?<=expediente.{{1,100}}){expediente_code}
 sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
 sentencia_pattern = regex.compile(rf"(?<=Sentencia.{{1,100}}){sentencia_code}")
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 # date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
-date_pattern = regex.compile(rf"(?:{'|'.join(meses)})")
+number_in_brackets = r'\(\d{1,5}\)'
+number_in_brackets_pattern = regex.compile(number_in_brackets)
+date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)})(?:.|\s){{1,100}}{number_in_brackets}"
+date_pattern = regex.compile(date_regex)
 # fmt: on
+print(date_regex)
+# assert False
 
 
 def is_valid_expediente(s):
@@ -52,10 +58,25 @@ def extract_expedientes(string: str):
 
 def extract_date(string: str):
     dates = date_pattern.findall(string)
-    return dates[0] if len(dates) == 1 else None
+    if len(dates) >= 1:
+        if len(dates) > 2:
+            print()
+        date_string = dates[-1]  # take very last which is closest to sentencia mention!
+        # return date_string
+        mes = meses_pattern.search(date_string).group()
+        mes_i = meses.index(mes)
+        day, year = [
+            int(s[1:-1]) for s in number_in_brackets_pattern.findall(date_string)
+        ]
+        date_s = f"{mes_i:02d}/{day:02d}/{year}"
+        return date_s
+    else:
+        return None
 
 
 DEBUG_RAW_TEXT = "/tmp/raw.txt"
+DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
+DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
 
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
@@ -68,6 +89,7 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
         expedientes = extract_expedientes(behind_sentencia)
         if len(expedientes) > 0:
             before_sentencia = string[previous_end:start]
+            # data_io.write_lines(DEBUG_BEFORE_SENTENCIA,[before_sentencia.replace("\n","€")],mode="ab")
             date = extract_date(before_sentencia)
             if date is not None:
                 yield Edicto(sentencia, date, expedientes, source)

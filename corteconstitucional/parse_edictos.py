@@ -93,9 +93,10 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
 
 def generate_edictos(
     data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
+    limit = None
 ) -> Generator[Edicto, None, None]:
 
-    for d in data_io.read_jsonl(f"{data_dir}/documents.jsonl"):
+    for k,d in enumerate(data_io.read_jsonl(f"{data_dir}/documents.jsonl")):
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
             text = parse_pdf(pdf_file)
@@ -106,6 +107,8 @@ def generate_edictos(
             data_io.write_lines(DEBUG_RAW_TEXT, text.split("\n"), mode="ab")
 
             yield from extract_data(d["href"], text)
+        if limit is not None and k>limit:
+            break
 
 
 missing_dash = re.compile(r"\w{1,5}\d{1,10}")

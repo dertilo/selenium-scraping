@@ -30,8 +30,6 @@ number_in_brackets_pattern = regex.compile(number_in_brackets)
 date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)})(?:.|\s){{1,100}}{number_in_brackets}"
 date_pattern = regex.compile(date_regex)
 # fmt: on
-print(date_regex)
-# assert False
 
 
 def is_valid_expediente(s):
@@ -59,8 +57,6 @@ def extract_expedientes(string: str):
 def extract_date(string: str):
     dates = date_pattern.findall(string)
     if len(dates) >= 1:
-        if len(dates) > 2:
-            print()
         date_string = dates[-1]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()

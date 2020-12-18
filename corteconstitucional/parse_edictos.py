@@ -60,7 +60,7 @@ def extract_date(string: str):
         date_string = dates[-1]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()
-        mes_i = meses.index(mes)
+        mes_i = meses.index(mes)+1
         day, year = [
             int(s[1:-1]) for s in number_in_brackets_pattern.findall(date_string)
         ]

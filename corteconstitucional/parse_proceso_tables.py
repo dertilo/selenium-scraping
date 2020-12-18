@@ -33,6 +33,8 @@ def parse_date(s: str):
     mapped_month = map.get(month, month)
     normalized_date_s = s.replace(month, mapped_month)
     date = datetime.strptime(normalized_date_s, "%b %d %Y")
+    assert date.day >=1
+    assert date.month >=1
     return date.strftime("%m/%d/%Y")
 
 

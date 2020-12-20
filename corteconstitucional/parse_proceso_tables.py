@@ -27,14 +27,15 @@ class TableDatum:
 
 month_pattern = regex.compile(r"[A-Za-z]{1,4}")
 
+
 def parse_date(s: str):
     month = month_pattern.search(s).group()
     map = {"Abr": "Apr", "Ago": "Aug", "Dic": "Dec", "Ene": "Jan"}
     mapped_month = map.get(month, month)
     normalized_date_s = s.replace(month, mapped_month)
     date = datetime.strptime(normalized_date_s, "%b %d %Y")
-    assert date.day >=1
-    assert date.month >=1
+    assert date.day >= 1
+    assert date.month >= 1
     return date.strftime("%m/%d/%Y")
 
 
@@ -49,12 +50,15 @@ def build_table_datum(d):
     fijacion = kv.get("Fallo.Fijación Edicto", None)
     aprobacion = kv.get("Fallo.Aprobación Proyecto", None)
     radicacion = kv.get("Radicación")
+    fijacion, aprobacion, radicacion = [
+        parse_date(s) if s is not None else None
+        for s in [fijacion, aprobacion, radicacion]
+    ]
     return TableDatum(
         d["id"],
-        *[
-            parse_date(s) if s is not None else None
-            for s in [fijacion, aprobacion, radicacion]
-        ],
+        fijacion,
+        aprobacion,
+        radicacion,
     )
 
 

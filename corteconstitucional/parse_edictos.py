@@ -79,7 +79,7 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     matches = list(sentencia_pattern.finditer(string))
     spans = [(m.start(), m.end(), m.group()) for m in matches]
     for k, (start, end, sentencia) in enumerate(spans):
-        next_start, *_ = spans[k + 1] if k + 1 < len(spans) else (len(string),)
+        next_start, _,_ = spans[k + 1] if k + 1 < len(spans) else (len(string),None,None)
         _, previous_end, _ = spans[k - 1] if k > 0 else (None, 0, None)
         behind_sentencia = string[end:next_start]
         expedientes = extract_expedientes(behind_sentencia)

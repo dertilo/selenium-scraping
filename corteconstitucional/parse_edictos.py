@@ -53,8 +53,9 @@ class Edicto:
 
 def extract_expedientes(string: str):
     matches = [
-        expediente_code_pattern.search(s).group()
+        e
         for s in expediente_pattern.findall(string)
+        for e in expediente_code_pattern.findall(s)
     ]
     ids = [fix_expediente(m) for m in matches]
     assert all([is_valid_expediente(eid) for eid in ids])
@@ -164,10 +165,11 @@ if __name__ == "__main__":
     data = list(tqdm(generate_edictos()))
     print(f"unique: {len(set(data))}")
     # print(set(d.expedientes[0].split("-")[0] for d in data))
-    data_io.write_jsonl("/tmp/edictos.jsonl", (asdict(d) for d in data))
+    data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
     # data_io.write_jsonl("/tmp/texts.txt", data)
 
     """
+    absolute number not that interesting cause one edicto can have multiple expedientes
     2178it [00:42, 51.29it/s]
     unique: 2166
     """

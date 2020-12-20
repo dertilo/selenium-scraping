@@ -24,7 +24,8 @@ expediente_pattern = regex.compile(rf"expediente{anything}{{1,100}}{expediente_c
 expediente_code_pattern = regex.compile(expediente_code)
 
 sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
-sentencia_pattern = regex.compile(rf"(?<=Sentencia.{{1,100}}){sentencia_code}")
+sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,100}}{sentencia_code}")
+sentencia_code_pattern = regex.compile(sentencia_code)
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
 meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 # date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
@@ -84,9 +85,15 @@ for f in [DEBUG_RAW_TEXT, DEBUG_BEFORE_SENTENCIA, DEBUG_BEFORE_SENTENCIA_NO_DATE
         os.remove(f)
 
 
+def get_sentencia_span(m):
+    outer_start = m.start()
+    im = sentencia_code_pattern.search(m.group())
+    return outer_start + im.start(), outer_start + im.end(), im.group()
+
+
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
-    matches = list(sentencia_pattern.finditer(string))
-    spans = [(m.start(), m.end(), m.group()) for m in matches]
+    matches = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
+    spans = [(s, e, m) for s, e, m in matches]
     for k, (start, end, sentencia) in enumerate(spans):
         next_start, _, _ = (
             spans[k + 1] if k + 1 < len(spans) else (len(string), None, None)
@@ -161,6 +168,6 @@ if __name__ == "__main__":
     # data_io.write_jsonl("/tmp/texts.txt", data)
 
     """
-    2125it [00:32, 66.20it/s] 
-    unique: 2114
+    2178it [00:42, 51.29it/s]
+    unique: 2166
     """

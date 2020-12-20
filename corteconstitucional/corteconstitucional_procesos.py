@@ -25,8 +25,6 @@ BUSCADOR_DE_PROCESOS = '//*[@id="nav-tabs-wrapper"]/li[13]'
 
 
 def scrape_proceso_tables(search_ids: List[str]):
-    search_ids = list(set(search_ids))
-    print(f"got {len(search_ids)} unique ids")
     base_url = "https://www.corteconstitucional.gov.co/secretaria/"
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     os.makedirs(data_path, exist_ok=True)
@@ -125,8 +123,12 @@ def build_option2id(wd):
 if __name__ == "__main__":
     from corteconstitucional.parse_edictos import generate_edictos
 
-    scrape_proceso_tables((eid for e in generate_edictos() for eid in e.expedientes))
+    search_ids = (eid for e in generate_edictos() for eid in e.expedientes)
+    search_ids = list(set(tqdm(search_ids)))
+    print(f"got {len(search_ids)} unique ids")
+
+    scrape_proceso_tables(search_ids)
     """
-    got 2190 unique ids
-    100%|██████████| 2190/2190 [02:24<00:00, 15.18it/s]
+    got 2341 unique ids
+    100%|██████████| 2341/2341 [06:21<00:00,  6.13it/s]
     """

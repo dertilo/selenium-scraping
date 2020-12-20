@@ -88,3 +88,12 @@ if __name__ == "__main__":
             if t.expediente not in notfound_expedientes
         ),
     )
+
+"""
+edictos
+2178it [00:44, 49.31it/s]
+0it [00:00, ?it/s]unique edictos 2166
+procesos
+2293it [00:13, 168.57it/s]
+cound not find 132 expedientes
+"""

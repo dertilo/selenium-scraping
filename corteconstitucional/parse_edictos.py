@@ -29,7 +29,7 @@ sentencia_code_pattern = regex.compile(sentencia_code)
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
 meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 # date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
-number_in_brackets = r'\(\d{1,5}\)'
+number_in_brackets = r'\(\d{1,5}º?\)'
 number_in_brackets_pattern = regex.compile(number_in_brackets)
 date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
 date_pattern = regex.compile(date_regex)
@@ -70,7 +70,8 @@ def extract_date(string: str):
         mes = meses_pattern.search(date_string).group()
         mes_i = meses.index(mes) + 1
         day, year = [
-            int(s[1:-1]) for s in number_in_brackets_pattern.findall(date_string)
+            int(s[1:-1].replace("º", ""))
+            for s in number_in_brackets_pattern.findall(date_string)
         ]
         date_s = f"{mes_i:02d}/{day:02d}/{year}"
         return date_s
@@ -170,6 +171,6 @@ if __name__ == "__main__":
 
     """
     absolute number not that interesting cause one edicto can have multiple expedientes
-    2178it [00:42, 51.29it/s]
-    unique: 2166
+    2193it [00:48, 45.15it/s]
+    unique: 2181
     """

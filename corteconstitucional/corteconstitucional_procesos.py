@@ -129,6 +129,7 @@ if __name__ == "__main__":
 
     scrape_proceso_tables(search_ids)
     """
-    got 2341 unique ids
-    100%|██████████| 2341/2341 [06:21<00:00,  6.13it/s]
+    2393it [00:48, 49.47it/s]
+    got 2354 unique ids
+    100%|██████████| 2354/2354 [00:00<00:00, 268963.79it/s]
     """

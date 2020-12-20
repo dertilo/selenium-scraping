@@ -91,9 +91,9 @@ if __name__ == "__main__":
 
 """
 edictos
-2178it [00:47, 45.54it/s]
-0it [00:00, ?it/s]unique edictos 2166
+2193it [00:47, 45.69it/s]
+unique edictos 2181
 procesos
-2392it [00:14, 159.98it/s]
-cound not find 51 expedientes
+2392it [00:15, 156.45it/s]
+cound not find 38 expedientes
 """

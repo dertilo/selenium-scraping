@@ -44,6 +44,7 @@ def scrape_proceso_tables(search_ids: List[str]):
             except BaseException as e:
                 # traceback.print_stack()
                 # raise e
+                data_io.write_lines(f"{data_path}/could_not_scrape.txt",[search_id])
                 print(f"{search_id} fucked it up!")
 
 def dump_proceso_table(wd):
@@ -126,5 +127,6 @@ if __name__ == "__main__":
 
     scrape_proceso_tables((eid for e in generate_edictos() for eid in e.expedientes))
     """
-    2151it [2:52:30,  4.81s/it]
+    got 2190 unique ids
+    100%|██████████| 2190/2190 [02:24<00:00, 15.18it/s]
     """

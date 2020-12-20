@@ -65,8 +65,11 @@ def build_table_datum(d):
 if __name__ == "__main__":
     # edictos_file = f"{os.environ['HOME']}/data/corteconstitucional/edictos/documents.jsonl"
     # edictos = {d:d for d in data_io.read_jsonl(edictos_file)}
+    print("edictos")
     edictos: List[Edicto] = list(tqdm(generate_edictos()))
+    print(f"unique edictos {len(set(edictos))}")
     exp2edicto = {exp: e for e in edictos for exp in e.expedientes}
+    print("procesos")
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     raw_data = (
         data_io.read_json(str(file)) for file in tqdm(Path(data_path).glob("*.json"))

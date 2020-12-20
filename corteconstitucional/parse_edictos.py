@@ -1,3 +1,4 @@
+import shutil
 from dataclasses import dataclass, asdict
 
 from typing import NamedTuple, List, Generator
@@ -18,7 +19,9 @@ abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "
 # expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
 btag = '(?:</?b>)'
 expediente_code = rf"(?:{'|'.join(abbreviations)})\s?{btag}?-?{btag}?\s?\d{{1,9}}"
-expediente_pattern = regex.compile(rf"(?<=expediente.{{1,100}}){expediente_code}")
+anything = r'(?:.|\s)'
+expediente_pattern = regex.compile(rf"expediente{anything}{{1,100}}{expediente_code}")
+expediente_code_pattern = regex.compile(expediente_code)
 
 sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
 sentencia_pattern = regex.compile(rf"(?<=Sentencia.{{1,100}}){sentencia_code}")
@@ -27,7 +30,7 @@ meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 # date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
 number_in_brackets = r'\(\d{1,5}\)'
 number_in_brackets_pattern = regex.compile(number_in_brackets)
-date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)})(?:.|\s){{1,100}}{number_in_brackets}"
+date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
 date_pattern = regex.compile(date_regex)
 # fmt: on
 
@@ -48,7 +51,10 @@ class Edicto:
 
 
 def extract_expedientes(string: str):
-    matches = expediente_pattern.findall(string)
+    matches = [
+        expediente_code_pattern.search(s).group()
+        for s in expediente_pattern.findall(string)
+    ]
     ids = [fix_expediente(m) for m in matches]
     assert all([is_valid_expediente(eid) for eid in ids])
     return ids
@@ -60,7 +66,7 @@ def extract_date(string: str):
         date_string = dates[-1]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()
-        mes_i = meses.index(mes)+1
+        mes_i = meses.index(mes) + 1
         day, year = [
             int(s[1:-1]) for s in number_in_brackets_pattern.findall(date_string)
         ]
@@ -73,30 +79,36 @@ def extract_date(string: str):
 DEBUG_RAW_TEXT = "/tmp/raw.txt"
 DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
 DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
+for f in [DEBUG_RAW_TEXT, DEBUG_BEFORE_SENTENCIA, DEBUG_BEFORE_SENTENCIA_NO_DATE]:
+    if os.path.isfile(f):
+        os.remove(f)
 
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     matches = list(sentencia_pattern.finditer(string))
     spans = [(m.start(), m.end(), m.group()) for m in matches]
     for k, (start, end, sentencia) in enumerate(spans):
-        next_start, _,_ = spans[k + 1] if k + 1 < len(spans) else (len(string),None,None)
+        next_start, _, _ = (
+            spans[k + 1] if k + 1 < len(spans) else (len(string), None, None)
+        )
         _, previous_end, _ = spans[k - 1] if k > 0 else (None, 0, None)
         behind_sentencia = string[end:next_start]
         expedientes = extract_expedientes(behind_sentencia)
         if len(expedientes) > 0:
             before_sentencia = string[previous_end:start]
-            # data_io.write_lines(DEBUG_BEFORE_SENTENCIA,[before_sentencia.replace("\n","€")],mode="ab")
+            data_io.write_lines(
+                DEBUG_BEFORE_SENTENCIA, [before_sentencia.replace("\n", "€")], mode="ab"
+            )
             date = extract_date(before_sentencia)
             if date is not None:
                 yield Edicto(sentencia, date, expedientes, source)
 
 
 def generate_edictos(
-    data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos",
-    limit = None
+    data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos", limit=None
 ) -> Generator[Edicto, None, None]:
 
-    for k,d in enumerate(data_io.read_jsonl(f"{data_dir}/documents.jsonl")):
+    for k, d in enumerate(data_io.read_jsonl(f"{data_dir}/documents.jsonl")):
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
             text = parse_pdf(pdf_file)
@@ -107,7 +119,7 @@ def generate_edictos(
             data_io.write_lines(DEBUG_RAW_TEXT, text.split("\n"), mode="ab")
 
             yield from extract_data(d["href"], text)
-        if limit is not None and k>limit:
+        if limit is not None and k > limit:
             break
 
 
@@ -143,14 +155,12 @@ def parse_pdf(pdf_file) -> str:
 
 if __name__ == "__main__":
     data = list(tqdm(generate_edictos()))
-    print(len(data))
-    print(len(set(data)))
+    print(f"unique: {len(set(data))}")
     # print(set(d.expedientes[0].split("-")[0] for d in data))
     data_io.write_jsonl("/tmp/edictos.jsonl", (asdict(d) for d in data))
     # data_io.write_jsonl("/tmp/texts.txt", data)
 
     """
-    got 2151 ids
-    with "date"
-    1767it [00:03, 455.90it/s]
+    2125it [00:32, 66.20it/s] 
+    unique: 2114
     """

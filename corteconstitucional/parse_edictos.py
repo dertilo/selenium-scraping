@@ -13,11 +13,12 @@ import textract
 from tqdm import tqdm
 from util import data_io
 
+from corteconstitucional.parse_edicto_date import parse_edicto_date
 from corteconstitucional.regexes import num2name, expediente_pattern, \
-    expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, meses, \
+    expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, MESES, \
     meses_pattern, number_in_brackets_pattern, date_numeric_pattern, \
     date_nonnum_pattern, edicto_no_pattern, num_pattern, CIRCLE, \
-    valid_expediente_pattern
+    valid_expediente_pattern, edicto_date_pattern
 
 
 def is_valid_expediente(s):
@@ -28,7 +29,8 @@ def is_valid_expediente(s):
 @dataclass(frozen=True, eq=True)
 class Edicto:
     sentencia: str
-    date: str
+    sentencia_date: str
+    edicto_date:str
     expedientes: List[str]
     source: str
     no: int
@@ -55,12 +57,15 @@ DEBUG_RAW_TEXT = "/tmp/raw.txt"
 DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
 DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
 DEBUG_NO_EDICTO = "/tmp/no_edicto.jsonl"
+DEBUG_EDICTO_DATE = "/tmp/failed_to_extract_date.jsonl"
+
 for f in [
     DEBUG_RAW_TEXT,
     DEBUG_BEFORE_SENTENCIA,
     DEBUG_BEFORE_SENTENCIA_NO_DATE,
     DEBUG_NO_DATE,
-    DEBUG_NO_EDICTO
+    DEBUG_NO_EDICTO,
+    DEBUG_EDICTO_DATE
 ]:
     if os.path.isfile(f):
         os.remove(f)
@@ -76,7 +81,7 @@ def extract_date(string: str):
         ]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()
-        mes_i = meses.index(mes) + 1
+        mes_i = MESES.index(mes) + 1
         day, year = [
             int(regex.sub(CIRCLE,"",s[1:-1]))
             for s in number_in_brackets_pattern.findall(date_string)
@@ -87,7 +92,7 @@ def extract_date(string: str):
 
         date_nonnum = dates_nonnum[-1]
         mes = meses_pattern.search(date_nonnum).group()
-        mes_i = meses.index(mes) + 1
+        mes_i = MESES.index(mes) + 1
 
         day = None
         for k in range(31, 1, -1):
@@ -129,6 +134,10 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
 
 
 def extract_from_edicto(source, string, edicto_num: int):
+    edicto_date = parse_edicto_date(string)
+    if edicto_date is None:
+        data_io.write_jsonl(DEBUG_EDICTO_DATE, [{"source":source, "text":string}], mode="ab")
+        return []
     spans = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
     edictos = []
     for k, (start, end, sentencia) in enumerate(spans):
@@ -145,8 +154,8 @@ def extract_from_edicto(source, string, edicto_num: int):
             )
             date = extract_date(before_sentencia)
             if date is not None:
-                edictos.append(Edicto(sentencia, date, expedientes, source, edicto_num))
-    if len(edictos) == 0:
+                edictos.append(Edicto(sentencia, date,edicto_date, expedientes, source, edicto_num))
+    if len(edictos) != 1:
         data_io.write_jsonl(DEBUG_NO_EDICTO, [{"source":source,"string":string}], "ab")
     return edictos
 
@@ -210,14 +219,14 @@ def parse_pdf(pdf_file) -> str:
 
 
 if __name__ == "__main__":
-    # data = list(tqdm(generate_edictos()))
-    data = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
+    data = list(tqdm(generate_edictos()))
+    # data = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
     unique_data = list(set(data))
     print(len(data))
     print(f"unique: {len(unique_data)}")
-    assert False
+    # assert False
     # print(set(d.expedientes[0].split("-")[0] for d in data))
-    # data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
+    data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
     # data_io.write_jsonl("/tmp/texts.txt", data)
 
     """

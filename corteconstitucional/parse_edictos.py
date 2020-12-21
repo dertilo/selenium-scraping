@@ -1,6 +1,8 @@
+import html2text
 import shutil
 from dataclasses import dataclass, asdict
 
+from bs4 import BeautifulSoup
 from typing import NamedTuple, List, Generator
 
 import re
@@ -29,10 +31,15 @@ sentencia_code_pattern = regex.compile(sentencia_code)
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
 meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 # date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
-number_in_brackets = r'\(\d{1,5}º?\)'
+CIRCLE = 'º'
+number_in_brackets = fr'\(\d{{1,5}}{CIRCLE}?\)'
 number_in_brackets_pattern = regex.compile(number_in_brackets)
 date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
 date_pattern = regex.compile(date_regex)
+
+NO_regex = "(?:N°|No\.)"
+edicto_no_pattern = regex.compile(rf"EDICTO{anything}{{1,10}}{NO_regex}{anything}{{1,10}}\d{{1,4}}")
+num_pattern = regex.compile(r"\d{1,4}")
 # fmt: on
 
 
@@ -46,6 +53,7 @@ class Edicto:
     date: str
     expedientes: List[str]
     source: str
+    no:int
 
     def __hash__(self):
         return hash((self.sentencia, *self.expedientes))
@@ -94,6 +102,20 @@ def get_sentencia_span(m):
 
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
+    edicto_nos = list(edicto_no_pattern.finditer(string))
+    if len(edicto_nos) == 0:
+        print(string)
+        assert False
+
+    for k,m in enumerate(edicto_nos):
+        edicto_end = edicto_nos[k+1].start() if k+1 < len(edicto_nos) else len(string)
+        edicto_start = m.end()
+        edicto_text = string[edicto_start:edicto_end]
+        edicto_num = num_pattern.search(m.group()).group()
+        yield from extract_from_edicto(source, edicto_text,edicto_num)
+
+
+def extract_from_edicto(source, string,edicto_num:int):
     matches = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
     spans = [(s, e, m) for s, e, m in matches]
     for k, (start, end, sentencia) in enumerate(spans):
@@ -110,7 +132,7 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
             )
             date = extract_date(before_sentencia)
             if date is not None:
-                yield Edicto(sentencia, date, expedientes, source)
+                yield Edicto(sentencia, date, expedientes, source,edicto_num)
 
 
 def generate_edictos(
@@ -124,9 +146,7 @@ def generate_edictos(
             yield from extract_data(d["href"], text)
 
         elif "html" in d:
-            text = d["html"]
-            data_io.write_lines(DEBUG_RAW_TEXT, text.split("\n"), mode="ab")
-
+            text = html2text.html2text(d["html"])
             yield from extract_data(d["href"], text)
         if limit is not None and k > limit:
             break

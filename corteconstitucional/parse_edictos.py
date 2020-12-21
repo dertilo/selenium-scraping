@@ -119,6 +119,9 @@ def get_sentencia_span(m):
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     edicto_nos = list(edicto_no_pattern.finditer(string))
+    if "ENERO" in source:
+        there_is_a_first_one = any([int(num_pattern.search(m.group()).group()) == 1 for m in edicto_nos])
+        assert there_is_a_first_one
 
     for k, m in enumerate(edicto_nos):
         edicto_end = (
@@ -126,8 +129,7 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
         )
         edicto_start = m.end()
         edicto_text = string[edicto_start:edicto_end]
-        edicto_num = num_pattern.search(m.group()).group()
-        # if edicto_num == 179:
+        edicto_num = int(num_pattern.search(m.group()).group())
 
         edictos = extract_from_edicto(source, edicto_text, edicto_num)
         yield from edictos

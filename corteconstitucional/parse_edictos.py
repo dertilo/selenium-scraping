@@ -54,8 +54,8 @@ name2num = {v: k for k, v in num2name.items()}
 # fmt: off
 abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "CJU", "RPZ", "RDL"]
 # expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
-expediente_code = rf"(?:{'|'.join(abbreviations)})\s?-?\s?\d{{1,9}}"
 anything = r'(?:.|\s)'
+expediente_code = rf"(?:{'|'.join(abbreviations)}){anything}{{0,4}}-?{anything}{{0,4}}\d{{1,9}}"
 expediente_pattern = regex.compile(rf"expediente{anything}{{1,10}}{expediente_code}")
 expediente_code_pattern = regex.compile(expediente_code)
 
@@ -143,10 +143,12 @@ def extract_date(string: str):
         mes = meses_pattern.search(date_nonnum).group()
         mes_i = meses.index(mes) + 1
 
-        if "veinticuatro" in date_nonnum:
-            day = name2num["veinticuatro"]
-        else:
-            assert False
+        day = None
+        for k in range(31, 1, -1):
+            if num2name[k] in date_nonnum:
+                day = k
+                break
+        assert day is not None
         year = [
             int(s[1:-1].replace("º", ""))
             for s in number_in_brackets_pattern.findall(date_nonnum)
@@ -237,7 +239,7 @@ missing_dash = re.compile(r"\w{1,5}\d{1,10}")
 
 
 def fix_expediente(eid: str):
-    eid = eid.replace(" ", "").replace("\n", "")
+    eid = eid.replace(" ", "").replace("\n", "").replace("*", "")
     if missing_dash.match(eid) is not None:
         letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
         numbers = regex.compile(r"\d{1,9}").findall(eid)[0]

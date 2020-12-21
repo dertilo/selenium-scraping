@@ -13,7 +13,7 @@ import textract
 from tqdm import tqdm
 from util import data_io
 
-from corteconstitucional.parse_edicto_date import parse_edicto_date
+from corteconstitucional.parse_edicto_date import parse_edicto_date, year_pattern
 from corteconstitucional.regexes import num2name, expediente_pattern, \
     expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, MESES, \
     meses_pattern, number_in_brackets_pattern, date_numeric_pattern, \
@@ -31,6 +31,7 @@ class Edicto:
     sentencia: str
     sentencia_date: str
     edicto_date:str
+    edicto_year:int
     expedientes: List[str]
     source: str
     no: int
@@ -119,6 +120,13 @@ def get_sentencia_span(m):
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     edicto_nos = list(edicto_no_pattern.finditer(string))
+    x = year_pattern.findall(source)
+    if len(x)!=1:
+        print(source)
+        edicto_year = None
+    else:
+        edicto_year = x[0]
+
     if "ENERO" in source:
         there_is_a_first_one = any([int(num_pattern.search(m.group()).group()) == 1 for m in edicto_nos])
         assert there_is_a_first_one
@@ -131,11 +139,11 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
         edicto_text = string[edicto_start:edicto_end]
         edicto_num = int(num_pattern.search(m.group()).group())
 
-        edictos = extract_from_edicto(source, edicto_text, edicto_num)
+        edictos = extract_from_edicto(source, edicto_text, edicto_num,edicto_year)
         yield from edictos
 
 
-def extract_from_edicto(source, string, edicto_num: int):
+def extract_from_edicto(source, string, edicto_num: int,edicto_year):
     edicto_date = parse_edicto_date(string)
     if edicto_date is None:
         data_io.write_jsonl(DEBUG_EDICTO_DATE, [{"source":source, "text":string}], mode="ab")
@@ -156,7 +164,7 @@ def extract_from_edicto(source, string, edicto_num: int):
             )
             date = extract_date(before_sentencia)
             if date is not None:
-                edictos.append(Edicto(sentencia, date,edicto_date, expedientes, source, edicto_num))
+                edictos.append(Edicto(sentencia, date,edicto_date,edicto_year, expedientes, source, edicto_num))
     if len(edictos) != 1:
         data_io.write_jsonl(DEBUG_NO_EDICTO, [{"source":source,"string":string}], "ab")
     return edictos

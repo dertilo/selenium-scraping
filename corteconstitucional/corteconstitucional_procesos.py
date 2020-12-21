@@ -121,10 +121,14 @@ def build_option2id(wd):
 
 
 if __name__ == "__main__":
-    from corteconstitucional.parse_edictos import generate_edictos
+    from corteconstitucional.parse_edictos import generate_edictos, Edicto
 
-    search_ids = (eid for e in generate_edictos() for eid in e.expedientes)
+    edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
+    # edictos = generate_edictos()
+    search_ids = (eid for e in edictos for eid in e.expedientes)
     search_ids = list(set(tqdm(search_ids)))
+
+    assert not any(["," in i for i in search_ids])
     print(f"got {len(search_ids)} unique ids")
 
     scrape_proceso_tables(search_ids)

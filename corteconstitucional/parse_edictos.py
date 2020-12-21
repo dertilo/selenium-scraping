@@ -14,13 +14,13 @@ from util import data_io
 from corteconstitucional.regexes import num2name, expediente_pattern, \
     expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, meses, \
     meses_pattern, number_in_brackets_pattern, date_numeric_pattern, \
-    date_nonnum_pattern, edicto_no_pattern, num_pattern, CIRCLE
-
-valid_expediente_pattern = re.compile(r"\w{1,5}-\d{1,10}")
+    date_nonnum_pattern, edicto_no_pattern, num_pattern, CIRCLE, \
+    valid_expediente_pattern
 
 
 def is_valid_expediente(s):
-    return valid_expediente_pattern.match(s) is not None
+    match = valid_expediente_pattern.match(s)
+    return match is not None and match.group() == s
 
 
 @dataclass(frozen=True, eq=True)
@@ -42,7 +42,9 @@ def extract_expedientes(string: str):
         for e in expediente_code_pattern.findall(s)
     ]
     ids = [fix_expediente(m) for m in matches]
-    assert all([is_valid_expediente(eid) for eid in ids])
+    if not all([is_valid_expediente(eid) for eid in ids]):
+        print(ids)
+        assert False
     return ids
 
 

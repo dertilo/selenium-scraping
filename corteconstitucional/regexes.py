@@ -37,7 +37,7 @@ num2name = {
 name2num = {v: k for k, v in num2name.items()}
 abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "CJU", "RPZ", "RDL"]
 anything = r'(?:.|\s)'
-no_brackets_no_letters = r'[^\)\(A-Za-z]'
+no_brackets_no_letters = r'[^\)\(A-Za-z\,\.]'
 expediente_code = rf"(?:{'|'.join(abbreviations)}){no_brackets_no_letters}{{0,4}}-?{no_brackets_no_letters}{{0,4}}\d{{1,9}}"
 expediente_pattern = regex.compile(rf"expediente{anything}{{1,100}}{expediente_code}")
 expediente_code_pattern = regex.compile(expediente_code)
@@ -59,6 +59,9 @@ date_nonnum_pattern = regex.compile(date_nonnum_regex)
 NO_regex = "(?:N°|No\.)"
 edicto_no_pattern = regex.compile(rf"EDICTO{anything}{{1,10}}{NO_regex}{anything}{{1,10}}\d{{1,4}}")
 num_pattern = regex.compile(r"\d{1,4}")
+
+valid_expediente_pattern = regex.compile(r"\w{1,5}-\d{1,10}")
+
 # fmt: on
 
 date_texts = [
@@ -69,11 +72,13 @@ date_texts = [
 date_texts_nonnum = [
 ]
 if __name__ == "__main__":
-    for text in date_texts:
-        # matches = sentencia_pattern.findall(text)
-        matches = expediente_pattern.findall(text)
-        # matches = date_numeric_pattern.findall(text)
-        print(matches)
+    match = valid_expediente_pattern.match("D-9806,9811")
+    print(match.group())
+    # for text in date_texts:
+    #     # matches = sentencia_pattern.findall(text)
+    #     matches = expediente_pattern.findall(text)
+    #     # matches = date_numeric_pattern.findall(text)
+    #     print(matches)
 
     # for text in date_texts_nonnum:
     #     print(text)

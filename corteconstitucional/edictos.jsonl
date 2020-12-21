@@ -1730,7 +1730,7 @@
 {"sentencia": "C-073/14", "date": "02/05/2014", "expedientes": ["D-9674"], "source": "EDICTOS MARZO 2014.php", "no": "046"}
 {"sentencia": "C-167/14", "date": "03/19/2014", "expedientes": ["D-9839"], "source": "EDICTOS MARZO 2014.php", "no": "047"}
 {"sentencia": "C-170/14", "date": "03/19/2014", "expedientes": ["D-9777"], "source": "EDICTOS MARZO 2014.php", "no": "048"}
-{"sentencia": "C-169/14", "date": "03/19/2014", "expedientes": ["D-9806,9811"], "source": "EDICTOS MARZO 2014.php", "no": "049"}
+{"sentencia": "C-169/14", "date": "03/19/2014", "expedientes": ["D-9806"], "source": "EDICTOS MARZO 2014.php", "no": "049"}
 {"sentencia": "C-1051/12", "date": "12/05/2012", "expedientes": ["LAT-386"], "source": "EDICTOS MARZO 2014.php", "no": "050"}
 {"sentencia": "C-875/11", "date": "11/22/2011", "expedientes": ["D-8474"], "source": "EDICTOS FEBRERO 2012.php", "no": "008"}
 {"sentencia": "C-807/11", "date": "10/31/2011", "expedientes": ["D-8485"], "source": "EDICTOS FEBRERO 2012.php", "no": "009"}
@@ -2116,7 +2116,7 @@
 {"sentencia": "C-120/20", "date": "04/15/2020", "expedientes": ["D-13385"], "source": "?mes=29/05/2020", "no": "057"}
 {"sentencia": "C-128/20", "date": "04/22/2020", "expedientes": ["D-13496"], "source": "?mes=29/05/2020", "no": "058"}
 {"sentencia": "C-589/19", "date": "12/05/2019", "expedientes": ["D-13176"], "source": "?mes=29/05/2020", "no": "059"}
-{"sentencia": "C-497/19", "date": "10/22/2019", "expedientes": ["D-11996", "D-11.996"], "source": "?mes=29/05/2020", "no": "060"}
+{"sentencia": "C-497/19", "date": "10/22/2019", "expedientes": ["D-11996", "D-11"], "source": "?mes=29/05/2020", "no": "060"}
 {"sentencia": "C-489/19", "date": "10/22/2019", "expedientes": ["D-13112"], "source": "?mes=29/05/2020", "no": "061"}
 {"sentencia": "C-022/20", "date": "01/29/2020", "expedientes": ["D-12570"], "source": "?mes=29/05/2020", "no": "062"}
 {"sentencia": "C-327/20", "date": "07/24/2019", "expedientes": ["D-12986"], "source": "?mes=29/05/2020", "no": "063"}

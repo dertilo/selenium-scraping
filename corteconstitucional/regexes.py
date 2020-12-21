@@ -34,6 +34,10 @@ num2name = {
     31: "treinta y uno",
 }
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+MESES = {m:k+1 for k,m in enumerate(MESES)}
+MESES.update({m.capitalize():k for m,k in MESES.items()})
+MESES.update({m.upper():k for m,k in MESES.items()})
+meses_list = list(MESES.keys())
 
 # fmt: off
 name2num = {v: k for k, v in num2name.items()}
@@ -46,16 +50,16 @@ expediente_code_pattern = regex.compile(expediente_code)
 sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{{1,4}})?"
 sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,10}}{sentencia_code}")
 sentencia_code_pattern = regex.compile(sentencia_code)
-MESES = MESES + [m.capitalize() for m in MESES] + [m.upper() for m in MESES]
 
-meses_pattern = regex.compile(rf"{'|'.join(MESES)}")
+meses = '|'.join(meses_list)
+meses_pattern = regex.compile(rf"{meses}")
 # CIRCLE = '(?:º|°)' # WTF there are different cirles!
 CIRCLE = '\D{0,3}' # if gave up!
 number_in_brackets = fr'\(\d{{1,5}}{CIRCLE}?\)'
 number_in_brackets_pattern = regex.compile(number_in_brackets)
-date_regex = rf"{number_in_brackets}{anything}{{1,100}}(?:{'|'.join(MESES)}){anything}{{1,100}}{number_in_brackets}"
+date_regex = rf"{number_in_brackets}{anything}{{1,100}}(?:{meses}){anything}{{1,100}}{number_in_brackets}"
 date_numeric_pattern = regex.compile(date_regex)
-date_nonnum_regex = rf"(?:{'|'.join(num2name.values())}){anything}{{1,100}}(?:{'|'.join(MESES)}){anything}{{1,100}}{number_in_brackets}"
+date_nonnum_regex = rf"(?:{'|'.join(num2name.values())}){anything}{{1,100}}(?:{meses}){anything}{{1,100}}{number_in_brackets}"
 date_nonnum_pattern = regex.compile(date_nonnum_regex)
 NO_regex = "(?:N°|No\.)"
 edicto_no_pattern = regex.compile(rf"EDICTO{anything}{{1,10}}{NO_regex}{anything}{{1,10}}\d{{1,4}}")
@@ -64,7 +68,7 @@ num_pattern = regex.compile(num_regex)
 
 valid_expediente_pattern = regex.compile(r"\w{1,5}-\d{1,10}")
 
-edicto_date_regex = rf"SE FIJA EN LA SECRETARÍA{anything}{{1,10}}HOY: {num_regex}{anything}{{1,10}}{MESES}{anything}{{1,40}}{number_in_brackets}"
+edicto_date_regex = rf"SE FIJA EN LA SECRETARÍA{anything}{{1,10}}HOY: {num_regex}{anything}{{1,10}}{meses_list}{anything}{{1,40}}{number_in_brackets}"
 edicto_date_pattern = regex.compile(edicto_date_regex)
 # fmt: on
 
@@ -76,9 +80,7 @@ date_texts = [
 date_texts_nonnum = [
 ]
 if __name__ == "__main__":
-    match = regex.compile(rf"SE FIJA EN LA SECRETARÍA{anything}{{1,10}}HOY: {num_regex}{anything}{{1,10}}{MESES}{anything}{{1,40}}{number_in_brackets}").search(edicto_texts[0])
-    # match = edicto_date_pattern.match(edicto_texts[0])
-    print(match)
+    pass
     # for text in date_texts:
     #     # matches = sentencia_pattern.findall(text)
     #     matches = expediente_pattern.findall(text)

@@ -81,7 +81,7 @@ def extract_date(string: str):
         ]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()
-        mes_i = MESES.index(mes) + 1
+        mes_i = MESES.get(mes)
         day, year = [
             int(regex.sub(CIRCLE,"",s[1:-1]))
             for s in number_in_brackets_pattern.findall(date_string)
@@ -92,7 +92,7 @@ def extract_date(string: str):
 
         date_nonnum = dates_nonnum[-1]
         mes = meses_pattern.search(date_nonnum).group()
-        mes_i = MESES.index(mes) + 1
+        mes_i = MESES.get(mes)
 
         day = None
         for k in range(31, 1, -1):

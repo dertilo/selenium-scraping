@@ -5,11 +5,11 @@ from corteconstitucional.regexes import (
     MESES,
     number_in_brackets,
     meses_pattern,
-    num_pattern,
+    num_pattern, meses_list,
 )
 
 # fmt: on
-edicto_date_regex = rf"SE FIJA EN LA (?:SECRETARÍA|SECRETARIA){anything}{{1,10}}HOY:{anything}{{1,5}}{num_regex}{anything}{{1,10}}{MESES}{anything}{{1,40}}{number_in_brackets}"
+edicto_date_regex = rf"SE FIJA EN LA (?:SECRETARÍA|SECRETARIA){anything}{{1,10}}HOY:{anything}{{1,5}}{num_regex}{anything}{{1,10}}{meses_list}{anything}{{1,40}}{number_in_brackets}"
 edicto_date_pattern = regex.compile(edicto_date_regex)
 # fmt: on
 
@@ -27,7 +27,7 @@ def parse_edicto_date(text):
         month_match = meses_pattern.search(s)
         day_match = num_pattern.search(s[: month_match.start()])
         year_match = year_pattern.search(s[month_match.end() :])
-        mes_i = MESES.index(month_match.group())
+        mes_i = MESES.get(month_match.group())
         day = int(day_match.group())
         year = year_match.group()
         date_s = f"{mes_i:02d}/{day:02d}/{year}"

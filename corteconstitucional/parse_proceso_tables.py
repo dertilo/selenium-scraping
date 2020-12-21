@@ -1,12 +1,9 @@
-from collections import Counter
+from collections import defaultdict
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
 import regex
 from typing import List
-
-from pprint import pprint
-
 from pathlib import Path
 
 import os
@@ -20,9 +17,7 @@ from corteconstitucional.parse_edictos import generate_edictos, Edicto
 @dataclass(frozen=True, eq=True)
 class TableDatum:
     expediente: str
-    fijacion: str
-    radicacion: str
-    aprobacion: str
+    fechas:List[str]
 
 
 month_pattern = regex.compile(r"[A-Za-z]{1,4}")
@@ -39,28 +34,26 @@ def parse_date(s: str):
     return date.strftime("%m/%d/%Y")
 
 
-def build_table_datum(d):
-    html = d["html"]
+def build_table_datum(raw_datum):
+    html = raw_datum["html"]
     dfs = pandas.read_html(html)
     assert len(dfs) <= 2
     table_df = dfs[1] if len(dfs) == 2 else dfs[0]
     assert table_df.columns.size == 2
-    dfd = table_df.to_dict()
-    kv = {k: dfd[1][i] for i, k in dfd[0].items()}
-    fijacion = kv.get("Fallo.Fijación Edicto", None)
-    aprobacion = kv.get("Fallo.Aprobación Proyecto", None)
-    radicacion = kv.get("Radicación")
-    fijacion, aprobacion, radicacion = [
-        parse_date(s) if s is not None else None
-        for s in [fijacion, aprobacion, radicacion]
-    ]
+    table_df.columns = table_df.iloc[0]
+    table_df = table_df[1:]
+    data = table_df.to_dict("records")
+
+    for d in data:
+        d["Actuación Secretaría"] = parse_date(d["Actuación Secretaría"])
+
     return TableDatum(
-        d["id"],
-        fijacion,
-        aprobacion,
-        radicacion,
+        raw_datum["id"],# actually expediente
+        data,
     )
 
+def edicto_id(e:Edicto):
+    return f"{e.source}_{e.no}"
 
 if __name__ == "__main__":
     # edictos_file = f"{os.environ['HOME']}/data/corteconstitucional/edictos/documents.jsonl"

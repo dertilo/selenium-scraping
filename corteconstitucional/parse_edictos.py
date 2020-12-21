@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import html2text
 from dataclasses import dataclass, asdict
 
@@ -32,7 +34,7 @@ class Edicto:
     no: int
 
     def __hash__(self):
-        return hash((self.sentencia, *self.expedientes))
+        return hash((self.source, str(self.no)))
 
 
 def extract_expedientes(string: str):
@@ -208,10 +210,14 @@ def parse_pdf(pdf_file) -> str:
 
 
 if __name__ == "__main__":
-    data = list(tqdm(generate_edictos()))
-    print(f"unique: {len(set(data))}")
+    # data = list(tqdm(generate_edictos()))
+    data = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
+    unique_data = list(set(data))
+    print(len(data))
+    print(f"unique: {len(unique_data)}")
+    assert False
     # print(set(d.expedientes[0].split("-")[0] for d in data))
-    data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
+    # data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
     # data_io.write_jsonl("/tmp/texts.txt", data)
 
     """

@@ -50,11 +50,13 @@ DEBUG_NO_DATE = "/tmp/no_date.txt"
 DEBUG_RAW_TEXT = "/tmp/raw.txt"
 DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
 DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
+DEBUG_NO_EDICTO = "/tmp/no_edicto.jsonl"
 for f in [
     DEBUG_RAW_TEXT,
     DEBUG_BEFORE_SENTENCIA,
     DEBUG_BEFORE_SENTENCIA_NO_DATE,
     DEBUG_NO_DATE,
+    DEBUG_NO_EDICTO
 ]:
     if os.path.isfile(f):
         os.remove(f)
@@ -140,8 +142,8 @@ def extract_from_edicto(source, string, edicto_num: int):
             date = extract_date(before_sentencia)
             if date is not None:
                 edictos.append(Edicto(sentencia, date, expedientes, source, edicto_num))
-    if len(edictos) != 1:
-        print()
+    if len(edictos) == 0:
+        data_io.write_jsonl(DEBUG_NO_EDICTO, [{"source":source,"string":string}], "ab")
     return edictos
 
 

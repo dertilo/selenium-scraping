@@ -56,37 +56,5 @@ def edicto_id(e:Edicto):
     return f"{e.source}_{e.no}"
 
 if __name__ == "__main__":
-    # edictos_file = f"{os.environ['HOME']}/data/corteconstitucional/edictos/documents.jsonl"
-    # edictos = {d:d for d in data_io.read_jsonl(edictos_file)}
-    print("edictos")
-    edictos: List[Edicto] = list(tqdm(generate_edictos()))
-    print(f"unique edictos {len(set(edictos))}")
-    exp2edicto = {exp: e for e in edictos for exp in e.expedientes}
-    print("procesos")
-    data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
-    raw_data = (
-        data_io.read_json(str(file)) for file in tqdm(Path(data_path).glob("*.json"))
-    )
-    table_data = [build_table_datum(d) for d in raw_data]
-    notfound_expedientes = [
-        t.expediente for t in table_data if t.expediente not in exp2edicto.keys()
-    ]
-    print(f"cound not find {len(notfound_expedientes)} expedientes")
-    data_io.write_lines("/tmp/notfound_expedientes.txt", notfound_expedientes)
-    data_io.write_jsonl(
-        "/tmp/merge.jsonl",
-        (
-            {**asdict(t), **asdict(exp2edicto[t.expediente])}
-            for t in table_data
-            if t.expediente not in notfound_expedientes
-        ),
-    )
+    assert False # see merge_edictos_proceso_tables.py
 
-"""
-edictos
-2231it [00:28, 79.07it/s]
-0it [00:00, ?it/s]unique edictos 2224
-procesos
-2396it [00:11, 199.94it/s]
-cound not find 0 expedientes
-"""

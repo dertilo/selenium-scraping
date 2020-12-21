@@ -41,7 +41,7 @@ no_brackets = r'[^\)\(]'
 expediente_code = rf"(?:{'|'.join(abbreviations)}){no_brackets}{{0,4}}-?{no_brackets}{{0,4}}\d{{1,9}}"
 expediente_pattern = regex.compile(rf"expediente{anything}{{1,10}}{expediente_code}")
 expediente_code_pattern = regex.compile(expediente_code)
-sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
+sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{{1,4}})?"
 sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,10}}{sentencia_code}")
 sentencia_code_pattern = regex.compile(sentencia_code)
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
@@ -62,15 +62,16 @@ num_pattern = regex.compile(r"\d{1,4}")
 # fmt: on
 
 date_texts = [
-    "Que la Sala Plena de esta Corporación en sesión del veintisiete (27) de Agosto de dos mil catorce (2014) adoptó la Sentencia N° **",
+    "Sala Plena de esta Corporación en sesión del veinte (20) de abril de\ndos mil diecisiete (2017) adoptó la Sentencia N° **C-223/17** dentro de los\nexpedientes **** acumulados **D-11604** y **D-11611** cuya parte resolut"
+    # "Que la Sala Plena de esta Corporación en sesión del veintisiete (27) de Agosto de dos mil catorce (2014) adoptó la Sentencia N° **",
     # "LA SECRETARÍA GENERAL DE LA CORTE CONSTITUCIONAL NOTIFICA:  Que la Sala Plena de esta Corporación en sesión del primero (1°) de julio de dos mil veinte (2020) adoptó la Sentencia N° ",
 ]
 date_texts_nonnum = [
 ]
 if __name__ == "__main__":
     for text in date_texts:
-        assert "°" in text
-        matches = regex.compile(rf"{number_in_brackets}{anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}").findall(text)
+        matches = sentencia_pattern.findall(text)
+        # matches = regex.compile(rf"{number_in_brackets}{anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}").findall(text)
         # matches = regex.compile(rf"(?:{'|'.join(meses)})").findall(text)
         # matches = date_numeric_pattern.findall(text)
         print(matches)

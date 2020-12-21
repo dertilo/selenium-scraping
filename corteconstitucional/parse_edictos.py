@@ -16,17 +16,51 @@ from util import data_io
 
 valid_expediente_pattern = re.compile(r"\w{1,5}-\d{1,10}")
 
+num2name = {
+    1: "uno",
+    2: "dos",
+    3: "tres",
+    4: "cuatro",
+    5: "cinco",
+    6: "seis",
+    7: "siete",
+    8: "ocho",
+    9: "nueve",
+    10: "diez",
+    11: "once",
+    12: "doce",
+    13: "trece",
+    14: "catorce",
+    15: "quince",
+    16: "dieciséis",
+    17: "diecisiete",
+    18: "dieciocho",
+    19: "diecinueve",
+    20: "veinte",
+    21: "veintiuno",
+    22: "veintidós",
+    23: "veintitrés",
+    24: "veinticuatro",
+    25: "veinticinco",
+    26: "veintiséis",
+    27: "veintisiete",
+    28: "veintiocho",
+    29: "veintinueve",
+    30: "treinta",
+    31: "treinta y uno",
+}
+name2num = {v: k for k, v in num2name.items()}
+
 # fmt: off
 abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "CJU", "RPZ", "RDL"]
 # expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
-btag = '(?:</?b>)'
-expediente_code = rf"(?:{'|'.join(abbreviations)})\s?{btag}?-?{btag}?\s?\d{{1,9}}"
+expediente_code = rf"(?:{'|'.join(abbreviations)})\s?-?\s?\d{{1,9}}"
 anything = r'(?:.|\s)'
-expediente_pattern = regex.compile(rf"expediente{anything}{{1,100}}{expediente_code}")
+expediente_pattern = regex.compile(rf"expediente{anything}{{1,10}}{expediente_code}")
 expediente_code_pattern = regex.compile(expediente_code)
 
 sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
-sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,100}}{sentencia_code}")
+sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,10}}{sentencia_code}")
 sentencia_code_pattern = regex.compile(sentencia_code)
 meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
 meses_pattern = regex.compile(rf"{'|'.join(meses)}")
@@ -34,8 +68,10 @@ meses_pattern = regex.compile(rf"{'|'.join(meses)}")
 CIRCLE = 'º'
 number_in_brackets = fr'\(\d{{1,5}}{CIRCLE}?\)'
 number_in_brackets_pattern = regex.compile(number_in_brackets)
-date_regex = rf"{number_in_brackets}(?:.|\s){{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
-date_pattern = regex.compile(date_regex)
+date_regex = rf"{number_in_brackets}{anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
+date_numeric_pattern = regex.compile(date_regex)
+date_nonnum_regex = rf"(?:{'|'.join(num2name.values())}){anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
+date_nonnum_pattern = regex.compile(date_nonnum_regex)
 
 NO_regex = "(?:N°|No\.)"
 edicto_no_pattern = regex.compile(rf"EDICTO{anything}{{1,10}}{NO_regex}{anything}{{1,10}}\d{{1,4}}")
@@ -53,7 +89,7 @@ class Edicto:
     date: str
     expedientes: List[str]
     source: str
-    no:int
+    no: int
 
     def __hash__(self):
         return hash((self.sentencia, *self.expedientes))
@@ -70,10 +106,28 @@ def extract_expedientes(string: str):
     return ids
 
 
+DEBUG_NO_DATE = "/tmp/no_date.txt"
+DEBUG_RAW_TEXT = "/tmp/raw.txt"
+DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
+DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
+for f in [
+    DEBUG_RAW_TEXT,
+    DEBUG_BEFORE_SENTENCIA,
+    DEBUG_BEFORE_SENTENCIA_NO_DATE,
+    DEBUG_NO_DATE,
+]:
+    if os.path.isfile(f):
+        os.remove(f)
+
+
 def extract_date(string: str):
-    dates = date_pattern.findall(string)
-    if len(dates) >= 1:
-        date_string = dates[-1]  # take very last which is closest to sentencia mention!
+    dates_numeric = date_numeric_pattern.findall(string)
+    dates_nonnum = date_nonnum_pattern.findall(string)
+
+    if len(dates_numeric) >= 1:
+        date_string = dates_numeric[
+            -1
+        ]  # take very last which is closest to sentencia mention!
         # return date_string
         mes = meses_pattern.search(date_string).group()
         mes_i = meses.index(mes) + 1
@@ -83,16 +137,25 @@ def extract_date(string: str):
         ]
         date_s = f"{mes_i:02d}/{day:02d}/{year}"
         return date_s
+    elif len(dates_nonnum) >= 1:
+
+        date_nonnum = dates_nonnum[-1]
+        mes = meses_pattern.search(date_nonnum).group()
+        mes_i = meses.index(mes) + 1
+
+        if "veinticuatro" in date_nonnum:
+            day = name2num["veinticuatro"]
+        else:
+            assert False
+        year = [
+            int(s[1:-1].replace("º", ""))
+            for s in number_in_brackets_pattern.findall(date_nonnum)
+        ][0]
+        date_s = f"{mes_i:02d}/{day:02d}/{year}"
+        return date_s
     else:
+        data_io.write_lines(DEBUG_NO_DATE, [string], "ab")
         return None
-
-
-DEBUG_RAW_TEXT = "/tmp/raw.txt"
-DEBUG_BEFORE_SENTENCIA = "/tmp/before_sentencia.txt"
-DEBUG_BEFORE_SENTENCIA_NO_DATE = "/tmp/before_sentencia_no_date.txt"
-for f in [DEBUG_RAW_TEXT, DEBUG_BEFORE_SENTENCIA, DEBUG_BEFORE_SENTENCIA_NO_DATE]:
-    if os.path.isfile(f):
-        os.remove(f)
 
 
 def get_sentencia_span(m):
@@ -103,21 +166,23 @@ def get_sentencia_span(m):
 
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     edicto_nos = list(edicto_no_pattern.finditer(string))
-    if len(edicto_nos) == 0:
-        print(string)
-        assert False
 
-    for k,m in enumerate(edicto_nos):
-        edicto_end = edicto_nos[k+1].start() if k+1 < len(edicto_nos) else len(string)
+    for k, m in enumerate(edicto_nos):
+        edicto_end = (
+            edicto_nos[k + 1].start() if k + 1 < len(edicto_nos) else len(string)
+        )
         edicto_start = m.end()
         edicto_text = string[edicto_start:edicto_end]
         edicto_num = num_pattern.search(m.group()).group()
-        yield from extract_from_edicto(source, edicto_text,edicto_num)
+        # if edicto_num == 179:
+
+        edictos = extract_from_edicto(source, edicto_text, edicto_num)
+        yield from edictos
 
 
-def extract_from_edicto(source, string,edicto_num:int):
-    matches = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
-    spans = [(s, e, m) for s, e, m in matches]
+def extract_from_edicto(source, string, edicto_num: int):
+    spans = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
+    edictos = []
     for k, (start, end, sentencia) in enumerate(spans):
         next_start, _, _ = (
             spans[k + 1] if k + 1 < len(spans) else (len(string), None, None)
@@ -132,14 +197,30 @@ def extract_from_edicto(source, string,edicto_num:int):
             )
             date = extract_date(before_sentencia)
             if date is not None:
-                yield Edicto(sentencia, date, expedientes, source,edicto_num)
+                edictos.append(Edicto(sentencia, date, expedientes, source, edicto_num))
+    if len(edictos) != 1:
+        print()
+    return edictos
+
+
+KNOWN_TO_HAVE_NO_EXPEDIENTE = [
+    "/secretaria/edictos/EDICTO PUBLICADO EN PROCESO DISCIPLINARIO 001-2018.pdf"
+]
+HREF_TO_EXCLUDE = ["editosanteriores.php", "?mes=18/12/2009"]
 
 
 def generate_edictos(
     data_dir=f"{os.environ['HOME']}/data/corteconstitucional/edictos", limit=None
 ) -> Generator[Edicto, None, None]:
 
-    for k, d in enumerate(data_io.read_jsonl(f"{data_dir}/documents.jsonl")):
+    g = (
+        d
+        for d in data_io.read_jsonl(f"{data_dir}/documents.jsonl")
+        if d["href"] not in HREF_TO_EXCLUDE
+    )
+    for k, d in enumerate(g):
+        if d["href"] in KNOWN_TO_HAVE_NO_EXPEDIENTE:
+            continue
         if "pdf" in d:
             pdf_file = f"{data_dir}/downloads/{d['pdf']}".replace(" ", "\ ")
             text = parse_pdf(pdf_file)
@@ -153,12 +234,10 @@ def generate_edictos(
 
 
 missing_dash = re.compile(r"\w{1,5}\d{1,10}")
-KNOWN_TO_HAVE_NO_EXPEDIENTE = ["EDICTO_PUBLICADO_EN_PROCESO_DISCIPLINARIO_001-2018.pdf"]
 
 
 def fix_expediente(eid: str):
     eid = eid.replace(" ", "").replace("\n", "")
-    eid = regex.sub(rf"{btag}", "", eid)
     if missing_dash.match(eid) is not None:
         letters = regex.compile(r"\p{L}{1,5}").findall(eid)[0]
         numbers = regex.compile(r"\d{1,9}").findall(eid)[0]

@@ -1,9 +1,7 @@
 import html2text
-import shutil
 from dataclasses import dataclass, asdict
 
-from bs4 import BeautifulSoup
-from typing import NamedTuple, List, Generator
+from typing import List, Generator
 
 import re
 
@@ -13,70 +11,12 @@ import textract
 from tqdm import tqdm
 from util import data_io
 
+from corteconstitucional.regexes import num2name, expediente_pattern, \
+    expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, meses, \
+    meses_pattern, number_in_brackets_pattern, date_numeric_pattern, \
+    date_nonnum_pattern, edicto_no_pattern, num_pattern, CIRCLE
 
 valid_expediente_pattern = re.compile(r"\w{1,5}-\d{1,10}")
-
-num2name = {
-    1: "uno",
-    2: "dos",
-    3: "tres",
-    4: "cuatro",
-    5: "cinco",
-    6: "seis",
-    7: "siete",
-    8: "ocho",
-    9: "nueve",
-    10: "diez",
-    11: "once",
-    12: "doce",
-    13: "trece",
-    14: "catorce",
-    15: "quince",
-    16: "dieciséis",
-    17: "diecisiete",
-    18: "dieciocho",
-    19: "diecinueve",
-    20: "veinte",
-    21: "veintiuno",
-    22: "veintidós",
-    23: "veintitrés",
-    24: "veinticuatro",
-    25: "veinticinco",
-    26: "veintiséis",
-    27: "veintisiete",
-    28: "veintiocho",
-    29: "veintinueve",
-    30: "treinta",
-    31: "treinta y uno",
-}
-name2num = {v: k for k, v in num2name.items()}
-
-# fmt: off
-abbreviations = ["D", "LAT", "RE", "OG", "PE", "CAC", "CRF", "ICC", "E", "OP", "CJU", "RPZ", "RDL"]
-# expediente_pattern = regex.compile(r"(?<=expediente.{1,100})\p{L}{1,5}\s?-?\s?\d{1,9}") # too lose
-anything = r'(?:.|\s)'
-expediente_code = rf"(?:{'|'.join(abbreviations)}){anything}{{0,4}}-?{anything}{{0,4}}\d{{1,9}}"
-expediente_pattern = regex.compile(rf"expediente{anything}{{1,10}}{expediente_code}")
-expediente_code_pattern = regex.compile(expediente_code)
-
-sentencia_code = rf"(?:{'|'.join(['C'])})\s?-?\s?\d{{1,4}}(?:/\d{1,4})?"
-sentencia_pattern = regex.compile(rf"Sentencia{anything}{{1,10}}{sentencia_code}")
-sentencia_code_pattern = regex.compile(sentencia_code)
-meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
-meses_pattern = regex.compile(rf"{'|'.join(meses)}")
-# date_pattern = regex.compile(rf"\(\d{{1,2}}\).{1,30}(?:{'|'.join(meses)}).{1,30}\(\d{{4}}\)")
-CIRCLE = 'º'
-number_in_brackets = fr'\(\d{{1,5}}{CIRCLE}?\)'
-number_in_brackets_pattern = regex.compile(number_in_brackets)
-date_regex = rf"{number_in_brackets}{anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
-date_numeric_pattern = regex.compile(date_regex)
-date_nonnum_regex = rf"(?:{'|'.join(num2name.values())}){anything}{{1,100}}(?:{'|'.join(meses)}){anything}{{1,100}}{number_in_brackets}"
-date_nonnum_pattern = regex.compile(date_nonnum_regex)
-
-NO_regex = "(?:N°|No\.)"
-edicto_no_pattern = regex.compile(rf"EDICTO{anything}{{1,10}}{NO_regex}{anything}{{1,10}}\d{{1,4}}")
-num_pattern = regex.compile(r"\d{1,4}")
-# fmt: on
 
 
 def is_valid_expediente(s):
@@ -132,7 +72,7 @@ def extract_date(string: str):
         mes = meses_pattern.search(date_string).group()
         mes_i = meses.index(mes) + 1
         day, year = [
-            int(s[1:-1].replace("º", ""))
+            int(regex.sub(CIRCLE,"",s[1:-1]))
             for s in number_in_brackets_pattern.findall(date_string)
         ]
         date_s = f"{mes_i:02d}/{day:02d}/{year}"

@@ -36,4 +36,5 @@ if __name__ == '__main__':
     merged_data = list(data_io.read_jsonl("/tmp/merged_edictos2tables.jsonl"))
 
     df = build_dataframe(merged_data)
+    df.sort_values(['edicto_year', 'no'], ascending=[True, True])
     df.to_csv("/tmp/table.csv",sep="\t")

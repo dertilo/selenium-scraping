@@ -8,7 +8,7 @@ from tqdm import tqdm
 from util import data_io
 
 from corteconstitucional.parse_edictos import Edicto
-from corteconstitucional.parse_proceso_tables import build_table_datum
+from corteconstitucional.parse_proceso_tables import parse_table
 
 
 def merge_edictos_proceso_tables(
@@ -18,8 +18,9 @@ def merge_edictos_proceso_tables(
     raw_data = list(
         data_io.read_json(str(file)) for file in tqdm(Path(data_path).glob("*.json"))
     )
-    table_data = (build_table_datum(d) for d in raw_data)
-    exp2table = {t.expediente: t for t in table_data}
+    print("parse tables")
+    table_data = (parse_table(d) for d in raw_data)
+    exp2table = {t.expediente: t for t in tqdm(table_data)}
     g = (
         {**asdict(e), **{"tables": [asdict(exp2table[exp]) for exp in e.expedientes]}}
         for e in edictos

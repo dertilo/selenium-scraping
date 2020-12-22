@@ -35,7 +35,7 @@ def parse_date(s: str):
     return date.strftime("%m/%d/%Y")
 
 
-def build_table_datum(raw_datum):
+def parse_table(raw_datum):
     html = raw_datum["html"]
     dfs = pandas.read_html(html)
     assert len(dfs) <= 2

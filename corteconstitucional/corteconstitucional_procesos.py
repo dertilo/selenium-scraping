@@ -31,19 +31,21 @@ def scrape_proceso_tables(search_ids: List[str]):
     download_path = f"{data_path}/downloads"
     wd = build_chrome_driver(download_path, headless=True)
 
-    for search_id in tqdm(search_ids):
-        file = f"{data_path}/{search_id}.json"
-        if not os.path.isfile(file):
-            try:
-                fire_search(base_url, search_id, wd)
-                datum = dump_proceso_table(wd)
-                datum["id"]=search_id
-                data_io.write_json(file,datum)
-            except BaseException as e:
-                # traceback.print_stack()
-                # raise e
-                data_io.write_lines(f"{data_path}/could_not_scrape.txt",[search_id])
-                print(f"{search_id} fucked it up!")
+    ids_files = ((eid, f"{data_path}/{eid}.json") for eid in search_ids)
+    to_be_scraped = [(eid,file) for eid,file in ids_files if not os.path.isfile(file) ]
+    print(f"already got {len(search_ids)-len(to_be_scraped)}")
+
+    for search_id,file in tqdm(to_be_scraped):
+        try:
+            fire_search(base_url, search_id, wd)
+            datum = dump_proceso_table(wd)
+            datum["id"]=search_id
+            data_io.write_json(file,datum)
+        except BaseException as e:
+            # traceback.print_stack()
+            # raise e
+            data_io.write_lines(f"{data_path}/could_not_scrape.txt",[search_id])
+            print(f"{search_id} fucked it up!")
 
 def dump_proceso_table(wd):
     click_it(wd, FIRST_ROW_POPUP)
@@ -123,17 +125,16 @@ def build_option2id(wd):
 if __name__ == "__main__":
     from corteconstitucional.parse_edictos import generate_edictos, Edicto
 
-    edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
-    # edictos = generate_edictos()
+    # edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
+    edictos = generate_edictos()
     search_ids = (eid for e in edictos for eid in e.expedientes)
     search_ids = list(set(tqdm(search_ids)))
 
-    assert not any(["," in i for i in search_ids])
     print(f"got {len(search_ids)} unique ids")
 
     scrape_proceso_tables(search_ids)
     """
-    2436it [00:00, 106483.71it/s]
-    got 2396 unique ids
-    100%|██████████| 2396/2396 [00:00<00:00, 303465.16it/s]
+    got 2400 unique ids
+    already got 2396
+    100%|██████████| 4/4 [00:28<00:00,  7.03s/it]
     """

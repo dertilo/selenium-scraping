@@ -123,10 +123,11 @@ def build_option2id(wd):
 
 
 if __name__ == "__main__":
-    from corteconstitucional.parse_edictos import generate_edictos, Edicto
+    from corteconstitucional.parse_edictos import generate_edictos, Edicto, \
+        parse_edictos
 
     # edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
-    edictos = generate_edictos()
+    edictos = parse_edictos()
     search_ids = (eid for e in edictos for eid in e.expedientes)
     search_ids = list(set(tqdm(search_ids)))
 

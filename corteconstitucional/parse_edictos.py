@@ -228,16 +228,18 @@ def parse_pdf(pdf_file) -> str:
     return text
 
 
-if __name__ == "__main__":
+def parse_edictos(save=True):
     data = list(tqdm(generate_edictos()))
     # data = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
     unique_data = list(set(data))
     print(len(data))
     print(f"unique: {len(unique_data)}")
-    # assert False
-    # print(set(d.expedientes[0].split("-")[0] for d in data))
-    data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
-    # data_io.write_jsonl("/tmp/texts.txt", data)
+    if save:
+        data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
+    return unique_data
+
+if __name__ == "__main__":
+    parse_edictos()
 
     """
     absolute number not that interesting cause one edicto can have multiple expedientes

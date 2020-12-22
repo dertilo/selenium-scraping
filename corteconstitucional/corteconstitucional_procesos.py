@@ -122,18 +122,20 @@ def build_option2id(wd):
     return option2id
 
 
+def download_proceso_data(edictos):
+    search_ids = (eid for e in edictos for eid in e.expedientes)
+    search_ids = list(set(tqdm(search_ids)))
+    print(f"got {len(search_ids)} unique ids")
+    scrape_proceso_tables(search_ids)
+
+
 if __name__ == "__main__":
     from corteconstitucional.parse_edictos import generate_edictos, Edicto, \
         parse_edictos
 
     # edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
     edictos = parse_edictos()
-    search_ids = (eid for e in edictos for eid in e.expedientes)
-    search_ids = list(set(tqdm(search_ids)))
-
-    print(f"got {len(search_ids)} unique ids")
-
-    scrape_proceso_tables(search_ids)
+    download_proceso_data(edictos)
     """
     got 2400 unique ids
     already got 2396

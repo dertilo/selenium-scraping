@@ -24,10 +24,16 @@ def flatten_expedientes(d):
             yield {**d,**dd,**{"expediente":exp}}
 
 
-if __name__ == '__main__':
-
-    rows = (r for d in data_io.read_jsonl("/tmp/merged_edictos2tables.jsonl")
+def build_dataframe(merged_data):
+    rows = (r for d in merged_data
             for r in flatten_expedientes(d))
     # pprint(Counter(f"{r['no']}_{r['edicto_year']}" for r in rows))
     df = pandas.DataFrame(rows)
+    return df
+
+
+if __name__ == '__main__':
+    merged_data = list(data_io.read_jsonl("/tmp/merged_edictos2tables.jsonl"))
+
+    df = build_dataframe(merged_data)
     df.to_csv("/tmp/table.csv",sep="\t")

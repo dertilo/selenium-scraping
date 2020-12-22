@@ -21,6 +21,7 @@ class TableDatum:
 
 
 month_pattern = regex.compile(r"[A-Za-z]{1,4}")
+ACTUACION_SECRETARIA = "Actuación Secretaría"
 
 
 def parse_date(s: str):
@@ -45,7 +46,7 @@ def build_table_datum(raw_datum):
     data = table_df.to_dict("records")
 
     for d in data:
-        d["Actuación Secretaría"] = parse_date(d["Actuación Secretaría"])
+        d[ACTUACION_SECRETARIA] = parse_date(d[ACTUACION_SECRETARIA])
 
     return TableDatum(
         raw_datum["id"],# actually expediente

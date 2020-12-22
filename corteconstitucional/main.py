@@ -21,4 +21,4 @@ if __name__ == '__main__':
 
     df = build_dataframe(merged_data)
     df = df.sort_values(['edicto_year', 'no'], ascending=[True, True])
-    df.to_csv("/tmp/table.csv",sep="\t")
+    df.to_csv("/tmp/table.csv",sep="\t",index=False)

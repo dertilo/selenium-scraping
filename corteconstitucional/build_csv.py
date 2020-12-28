@@ -20,6 +20,7 @@ def flatten_expedientes(d):
             if etapa in [fijacion,aprobacion,radicacion]:
                 actuacion = f[ACTUACION_SECRETARIA]
                 dd[etapa].append(actuacion)
+        dd[radicacion] = dd[radicacion][0]
         if all([k in dd for k in [fijacion,aprobacion,radicacion]]):
             yield {**d,**dd,**{"expediente":exp}}
 
@@ -36,5 +37,5 @@ if __name__ == '__main__':
     merged_data = list(data_io.read_jsonl("/tmp/merged_edictos2tables.jsonl"))
 
     df = build_dataframe(merged_data)
-    df.sort_values(['edicto_year', 'no'], ascending=[True, True])
-    df.to_csv("/tmp/table.csv",sep="\t")
+    df = df.sort_values(['edicto_year', 'no'], ascending=[True, True])
+    df.to_csv("/tmp/table.csv",sep="\t",index=False)

@@ -86,7 +86,7 @@ for f in [
 
 
 def reformat_date(date):
-    return datetime.strftime(datetime.strptime(date, "%m/%d/%Y"), "%m/%d/%Y")
+    return datetime.strftime(datetime.strptime(date, "%m/%d/%Y"), "%d/%m/%Y")
 
 
 year_in_brackets_pattern = regex.compile(fr"\(\d{{4}}{CIRCLE}?\)")

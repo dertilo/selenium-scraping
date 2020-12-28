@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 
 import html2text
 from dataclasses import dataclass, asdict
@@ -14,11 +15,23 @@ from tqdm import tqdm
 from util import data_io
 
 from corteconstitucional.parse_edicto_date import parse_edicto_date, year_pattern
-from corteconstitucional.regexes import num2name, expediente_pattern, \
-    expediente_code_pattern, sentencia_pattern, sentencia_code_pattern, MESES, \
-    meses_pattern, number_in_brackets_pattern, date_numeric_pattern, \
-    date_nonnum_pattern, edicto_no_pattern, num_pattern, CIRCLE, \
-    valid_expediente_pattern, edicto_date_pattern
+from corteconstitucional.regexes import (
+    num2name,
+    expediente_pattern,
+    expediente_code_pattern,
+    sentencia_pattern,
+    sentencia_code_pattern,
+    MESES,
+    meses_pattern,
+    number_in_brackets_pattern,
+    date_numeric_pattern,
+    date_nonnum_pattern,
+    edicto_no_pattern,
+    num_pattern,
+    CIRCLE,
+    valid_expediente_pattern,
+    edicto_date_pattern,
+)
 
 
 def is_valid_expediente(s):
@@ -30,8 +43,8 @@ def is_valid_expediente(s):
 class Edicto:
     sentencia: str
     sentencia_date: str
-    edicto_date:str
-    edicto_year:int
+    edicto_date: str
+    edicto_year: int
     expedientes: List[str]
     source: str
     no: int
@@ -66,10 +79,17 @@ for f in [
     DEBUG_BEFORE_SENTENCIA_NO_DATE,
     DEBUG_NO_DATE,
     DEBUG_NO_EDICTO,
-    DEBUG_EDICTO_DATE
+    DEBUG_EDICTO_DATE,
 ]:
     if os.path.isfile(f):
         os.remove(f)
+
+
+def reformat_date(date):
+    return datetime.strftime(datetime.strptime(date, "%m/%d/%Y"), "%m/%d/%Y")
+
+
+year_in_brackets_pattern = regex.compile(fr"\(\d{{4}}{CIRCLE}?\)")
 
 
 def extract_date(string: str):
@@ -84,10 +104,10 @@ def extract_date(string: str):
         mes = meses_pattern.search(date_string).group()
         mes_i = MESES.get(mes)
         day, year = [
-            int(regex.sub(CIRCLE,"",s[1:-1]))
+            int(regex.sub(CIRCLE, "", s[1:-1]))
             for s in number_in_brackets_pattern.findall(date_string)
         ]
-        date_s = f"{mes_i:02d}/{day:02d}/{year}"
+        date_s = reformat_date(f"{mes_i:02d}/{day:02d}/{year}")  # just for validation
         return date_s
     elif len(dates_nonnum) >= 1:
 
@@ -105,7 +125,9 @@ def extract_date(string: str):
             int(s[1:-1].replace("º", ""))
             for s in number_in_brackets_pattern.findall(date_nonnum)
         ][0]
-        date_s = f"{mes_i:02d}/{day:02d}/{year}"
+        if year == 200:  # HACK!: see 2010 Mayo, No. 64
+            year = 2009
+        date_s = reformat_date(f"{mes_i:02d}/{day:02d}/{year}")
         return date_s
     else:
         data_io.write_lines(DEBUG_NO_DATE, [string], "ab")
@@ -121,14 +143,16 @@ def get_sentencia_span(m):
 def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
     edicto_nos = list(edicto_no_pattern.finditer(string))
     x = year_pattern.findall(source)
-    if len(x)!=1:
+    if len(x) != 1:
         print(source)
         edicto_year = None
     else:
         edicto_year = x[0]
 
     if "ENERO" in source:
-        there_is_a_first_one = any([int(num_pattern.search(m.group()).group()) == 1 for m in edicto_nos])
+        there_is_a_first_one = any(
+            [int(num_pattern.search(m.group()).group()) == 1 for m in edicto_nos]
+        )
         assert there_is_a_first_one
 
     for k, m in enumerate(edicto_nos):
@@ -139,14 +163,16 @@ def extract_data(source: str, string: str) -> Generator[Edicto, None, None]:
         edicto_text = string[edicto_start:edicto_end]
         edicto_num = int(num_pattern.search(m.group()).group())
 
-        edictos = extract_from_edicto(source, edicto_text, edicto_num,edicto_year)
+        edictos = extract_from_edicto(source, edicto_text, edicto_num, edicto_year)
         yield from edictos
 
 
-def extract_from_edicto(source, string, edicto_num: int,edicto_year):
+def extract_from_edicto(source, string, edicto_num: int, edicto_year):
     edicto_date = parse_edicto_date(string)
     if edicto_date is None:
-        data_io.write_jsonl(DEBUG_EDICTO_DATE, [{"source":source, "text":string}], mode="ab")
+        data_io.write_jsonl(
+            DEBUG_EDICTO_DATE, [{"source": source, "text": string}], mode="ab"
+        )
         return []
     spans = [get_sentencia_span(m) for m in sentencia_pattern.finditer(string)]
     edictos = []
@@ -164,9 +190,21 @@ def extract_from_edicto(source, string, edicto_num: int,edicto_year):
             )
             date = extract_date(before_sentencia)
             if date is not None:
-                edictos.append(Edicto(sentencia, date,edicto_date,edicto_year, expedientes, source, edicto_num))
+                edictos.append(
+                    Edicto(
+                        sentencia,
+                        date,
+                        edicto_date,
+                        edicto_year,
+                        expedientes,
+                        source,
+                        edicto_num,
+                    )
+                )
     if len(edictos) != 1:
-        data_io.write_jsonl(DEBUG_NO_EDICTO, [{"source":source,"string":string}], "ab")
+        data_io.write_jsonl(
+            DEBUG_NO_EDICTO, [{"source": source, "string": string}], "ab"
+        )
     return edictos
 
 
@@ -237,6 +275,7 @@ def parse_edictos(save=True):
     if save:
         data_io.write_jsonl("edictos.jsonl", (asdict(d) for d in data))
     return unique_data
+
 
 if __name__ == "__main__":
     parse_edictos()

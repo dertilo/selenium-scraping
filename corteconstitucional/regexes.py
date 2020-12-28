@@ -33,8 +33,8 @@ num2name = {
     30: "treinta",
     31: "treinta y uno",
 }
-MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-MESES = {m:k+1 for k,m in enumerate(MESES)}
+MESES_ESP = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+MESES = {m:k+1 for k,m in enumerate(MESES_ESP)}
 MESES.update({m.capitalize():k for m,k in MESES.items()})
 MESES.update({m.upper():k for m,k in MESES.items()})
 meses_list = list(MESES.keys())

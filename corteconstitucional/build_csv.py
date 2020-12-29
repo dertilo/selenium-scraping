@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 
 import pandas
@@ -18,16 +19,18 @@ acumulada = "Acumulada"
 
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
-def no_leading_zeros(s):
-    while s.startswith("0"):
-        s = s[1:]
-    return s
 
 def fix_sentencia(s:str)->str:
     assert s.startswith("C")
     if s[1]!="-":
         s = "C-"+s[1:]
     return s
+
+def manual_patch(d):
+    if all([d[k]==v for k,v in [(ANO,2019),("Expediente",12355), (NO_EDICTO,31)]]):
+        d["Sentencia"] = 'C-046A/19'
+        print("fixed!")
+    return d
 
 def flatten_expedientes(d:Dict)->Generator:
     tables = d.pop("tables")
@@ -56,7 +59,7 @@ def flatten_expedientes(d:Dict)->Generator:
             "Mes": mes_name,
             NO_EDICTO: datum["no"],
             "Proceso": proceso ,
-            "Expediente":no_leading_zeros(expediente),
+            "Expediente":int(expediente),
             "Sentencia": fix_sentencia(datum["sentencia"]),
             "Fecha Radicación":reformat_date(fecha_radicacion),
             "Fecha Decisión":datum["sentencia_date"],
@@ -67,7 +70,7 @@ def flatten_expedientes(d:Dict)->Generator:
 
 
 def build_dataframe(merged_data:List)->DataFrame:
-    rows = (r for d in merged_data
+    rows = (manual_patch(r) for d in merged_data
             for r in flatten_expedientes(d)
             if r[ANO]>=2015)
     # pprint(Counter(f"{r['no']}_{r['edicto_year']}" for r in rows))
@@ -82,5 +85,5 @@ if __name__ == '__main__':
     consecutive_edicto_no_step = df[df[NO_EDICTO].diff() > 1]
     for _,d in consecutive_edicto_no_step.iterrows():
         print(f"year: {d[ANO]}; no: {d[NO_EDICTO]-1}")
-    df.to_csv("tilo_table.csv",sep="\t",index=False)
+    df.to_csv(f"{os.environ['HOME']}/code/DATA/visualizations-for-tatiana/tilo_table.csv",sep="\t",index=False)
 

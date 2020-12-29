@@ -85,5 +85,5 @@ if __name__ == '__main__':
     consecutive_edicto_no_step = df[df[NO_EDICTO].diff() > 1]
     for _,d in consecutive_edicto_no_step.iterrows():
         print(f"year: {d[ANO]}; no: {d[NO_EDICTO]-1}")
-    df.to_csv(f"{os.environ['HOME']}/code/DATA/visualizations-for-tatiana/tilo_table.csv",sep="\t",index=False)
+    df.to_csv(f"tilo_table.csv",sep="\t",index=False)
 

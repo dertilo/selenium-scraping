@@ -5,22 +5,20 @@ from tqdm import tqdm
 from util import data_io
 
 from corteconstitucional.build_csv import fix_sentencia
+from corteconstitucional.regexes import MESES_ESP
 
 
-def same_sentencia_code(a,b):
+def same_sentencia_code(a, b):
     return fix_sentencia(a) == fix_sentencia(b)
-
-# def before_slash(a):
-#     return a.split("/")[0] if "/" in a else a
-
 
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
 
+
 def build_id(d):
 
     try:
-        proceso = d['Proceso']
+        proceso = d["Proceso"]
         assert isinstance(proceso, str)
         eid = f"{int(d[ANO])}-{int(d[NO_EDICTO])}-{proceso}-{int(d['Expediente'])}"
     except Exception:
@@ -28,13 +26,11 @@ def build_id(d):
     return eid
 
 
-def to_datetime(df,key):
+def to_datetime(df, key):
     df[key] = pd.to_datetime(df[key])
 
 
-def load_csv_data(
-        file="tati_table.csv"
-):
+def load_csv_data(file="tati_table.csv"):
     df = pd.read_csv(file, sep="\t")
     fecha_radicacion = "Fecha Radicación"
     fecha_decision = "Fecha Decisión"
@@ -42,7 +38,7 @@ def load_csv_data(
     for k in [fecha_decision, fecha_radicacion, fijacion_edicto]:
         to_datetime(df, k)
 
-    data = df.to_dict('records')
+    data = df.to_dict("records")
     return data
 
 
@@ -72,8 +68,41 @@ def find_tilo_in_tati():
     """
 
 
-if __name__ == '__main__':
-    tati_data = load_csv_data("tati_table.csv")
-    tilo_data = load_csv_data("tilo_table.csv")
+def normalize_datum(d):
+    try:
+        year = int(d[ANO])
+        assert year <= 2021 and year > 1990
+        month_name = d["Mes"]
+        assert month_name.lower() in MESES_ESP
+        no_edicto = int(d[NO_EDICTO])
+        proceso = d["Proceso"]
+        assert isinstance(proceso, str)
+        datum = {
+            ANO: year,
+            "Mes": month_name,
+            NO_EDICTO: no_edicto,
+            "Proceso": proceso,
+            "Expediente": int(d["Expediente"]),
+            "Sentencia": fix_sentencia(d["Sentencia"]),
+            "Fecha Radicación": d["Fecha Radicación"].strftime("%d/%m/%Y"),
+            "Fecha Decisión": d["Fecha Decisión"].strftime("%d/%m/%Y"),
+            "Fijación Edicto": d["Fijación Edicto"].strftime("%d/%m/%Y"),
+        }
+    except Exception:
+        datum = None
+    return datum
 
-    find_tilo_in_tati()
+
+if __name__ == "__main__":
+    raw_tati_data = load_csv_data("tati_table.csv")
+    tati_data = list(
+        filter(lambda x: x is not None, map(normalize_datum, raw_tati_data))
+    )
+    print(f"tati-data: {len(tati_data)} of {len(raw_tati_data)} are valid")
+    raw_tilo_data = load_csv_data("tilo_table.csv")
+    tilo_data = list(
+        filter(lambda x: x is not None, map(normalize_datum, raw_tilo_data))
+    )
+    print(f"tilo-data: {len(tilo_data)} of {len(raw_tilo_data)} are valid")
+
+    # find_tilo_in_tati()

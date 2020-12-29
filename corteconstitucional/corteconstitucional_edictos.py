@@ -128,7 +128,7 @@ def download_edictos(
         data_io.write_jsonl(
             new_file, generate_raw_docs(old_docs, hrefs, wd, download_dir)
         )
-    except BaseException:
+    except Exception as e:
         traceback.print_exc()
         print("shit happened")
     finally:

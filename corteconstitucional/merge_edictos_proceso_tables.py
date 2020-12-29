@@ -6,6 +6,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from util import data_io
+from util.util_methods import merge_dicts
 
 from corteconstitucional.parse_edictos import Edicto
 from corteconstitucional.parse_proceso_tables import parse_table
@@ -22,7 +23,9 @@ def merge_edictos_proceso_tables(
     table_data = (parse_table(d) for d in raw_data)
     exp2table = {t.expediente: t for t in tqdm(table_data)}
     g = (
-        {**asdict(e), **{"tables": [asdict(exp2table[exp]) for exp in e.expedientes]}}
+        merge_dicts(
+            [asdict(e), {"tables": [asdict(exp2table[exp]) for exp in e.expedientes]}]
+        )
         for e in edictos
     )
     merged_data = list(g)

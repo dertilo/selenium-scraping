@@ -5,6 +5,7 @@ from pprint import pprint
 
 import pandas
 from util import data_io
+from util.util_methods import merge_dicts
 
 from corteconstitucional.parse_edictos import reformat_date
 from corteconstitucional.parse_proceso_tables import ACTUACION_SECRETARIA
@@ -40,7 +41,7 @@ def flatten_expedientes(d):
                 dd[etapa].append(actuacion)
         dd[radicacion] = dd[radicacion][0]
 
-        datum = {**d, **dd, **{"expediente": exp}}
+        datum = merge_dicts([d, dd, {"expediente": exp}])
         edicto_date = datetime.strptime(datum["edicto_date"], "%m/%d/%Y")
         year = int(datum["edicto_year"])
         mes_name = MESES_ESP[edicto_date.month-1].capitalize()

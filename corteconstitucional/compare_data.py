@@ -4,26 +4,28 @@ from tqdm import tqdm
 
 from util import data_io
 
+from corteconstitucional.build_csv import fix_sentencia
+
 
 def same_sentencia_code(a,b):
-    return before_slash(a) == before_slash(b)
+    return fix_sentencia(a) == fix_sentencia(b)
 
-def before_slash(a):
-    return a.split("/")[0] if "/" in a else a
+# def before_slash(a):
+#     return a.split("/")[0] if "/" in a else a
 
 
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
 
-def try_int(x):
-    try:
-        return int(x)
-    except Exception:
-        return -1
-
 def build_id(d):
 
-    return f"{try_int(d[ANO])}-{try_int(d[NO_EDICTO])}-{d['Proceso']}-{try_int(d['Expediente'])}"
+    try:
+        proceso = d['Proceso']
+        assert isinstance(proceso, str)
+        eid = f"{int(d[ANO])}-{int(d[NO_EDICTO])}-{proceso}-{int(d['Expediente'])}"
+    except Exception:
+        eid = None
+    return eid
 
 
 def to_datetime(df,key):
@@ -45,16 +47,20 @@ def load_csv_data(
 
 
 def find_tilo_in_tati():
-    exp2datum_tilo = {build_id(d): d for d in tilo_data}
+    eid2tilo = {build_id(d): d for d in tilo_data}
+    assert not any([k is None for k in eid2tilo.keys()])
     shit_counter = 0
     for d in tqdm(tati_data):
         eid = build_id(d)
-        if eid not in exp2datum_tilo.keys():
+        if eid is None:
+            print(f"invalid id: {d}")
+            continue
+        if eid not in eid2tilo.keys():
             print("NOT EXISTENT!")
             print(d)
             shit_counter += 1
         else:
-            tilo_d = exp2datum_tilo[eid]
+            tilo_d = eid2tilo[eid]
             if not same_sentencia_code(d["Sentencia"], tilo_d["Sentencia"]):
                 shit_counter += 1
                 print("DIFFERING")
@@ -62,7 +68,7 @@ def find_tilo_in_tati():
                 pprint(tilo_d)
     print(f"shit_counter: {shit_counter}")
     """
-    shit_counter: 17
+    shit_counter: 4
     """
 
 

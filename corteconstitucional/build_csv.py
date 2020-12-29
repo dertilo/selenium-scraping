@@ -21,6 +21,7 @@ ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
 
 def fix_sentencia(s:str)->str:
+    s = s.replace(" ","")
     assert s.startswith("C")
     if s[1]!="-":
         s = "C-"+s[1:]

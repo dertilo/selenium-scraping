@@ -43,27 +43,31 @@ def load_csv_data(
     data = df.to_dict('records')
     return data
 
-if __name__ == '__main__':
-    tati_data = load_csv_data("tati_table.csv")
-    tilo_data = load_csv_data("tilo_table.csv")
 
-    exp2datum_tilo = {build_id(d):d for d in tilo_data}
+def find_tilo_in_tati():
+    exp2datum_tilo = {build_id(d): d for d in tilo_data}
     shit_counter = 0
     for d in tqdm(tati_data):
         eid = build_id(d)
         if eid not in exp2datum_tilo.keys():
             print("NOT EXISTENT!")
             print(d)
-            shit_counter+=1
+            shit_counter += 1
         else:
             tilo_d = exp2datum_tilo[eid]
-            if not same_sentencia_code(d["Sentencia"],tilo_d["Sentencia"]):
+            if not same_sentencia_code(d["Sentencia"], tilo_d["Sentencia"]):
                 shit_counter += 1
                 print("DIFFERING")
                 pprint(d)
                 pprint(tilo_d)
     print(f"shit_counter: {shit_counter}")
+    """
+    shit_counter: 17
+    """
 
-    """
-    25
-    """
+
+if __name__ == '__main__':
+    tati_data = load_csv_data("tati_table.csv")
+    tilo_data = load_csv_data("tilo_table.csv")
+
+    find_tilo_in_tati()

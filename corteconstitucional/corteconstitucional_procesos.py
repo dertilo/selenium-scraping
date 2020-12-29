@@ -1,13 +1,8 @@
-import traceback
-
 import os
-import pandas
-from selenium.webdriver.support.select import Select
+from bs4 import BeautifulSoup
 from time import sleep
 from tqdm import tqdm
 from typing import List
-
-from bs4 import BeautifulSoup
 from util import data_io
 
 from common import build_chrome_driver, click_it, enter_keyboard_input
@@ -24,7 +19,7 @@ POPUP_REFRESH_BUTTON = "/html/body/font/h1/a[1]/img"
 BUSCADOR_DE_PROCESOS = '//*[@id="nav-tabs-wrapper"]/li[13]'
 
 
-def scrape_proceso_tables(search_ids: List[str]):
+def scrape_proceso_tables(search_ids: List):
     base_url = "https://www.corteconstitucional.gov.co/secretaria/"
     data_path = f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
     os.makedirs(data_path, exist_ok=True)
@@ -130,8 +125,7 @@ def download_proceso_data(edictos):
 
 
 if __name__ == "__main__":
-    from corteconstitucional.parse_edictos import generate_edictos, Edicto, \
-        parse_edictos
+    from corteconstitucional.parse_edictos import parse_edictos
 
     # edictos = (Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl"))
     edictos = parse_edictos()

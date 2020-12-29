@@ -1,15 +1,15 @@
-from collections import defaultdict, Counter
-from datetime import datetime
-
-from pprint import pprint
+from collections import defaultdict
 
 import pandas
+from datetime import datetime
+from pandas.core.frame import DataFrame
+from typing import Dict, Generator, List
 from util import data_io
 from util.util_methods import merge_dicts
 
 from corteconstitucional.parse_edictos import reformat_date
 from corteconstitucional.parse_proceso_tables import ACTUACION_SECRETARIA
-from corteconstitucional.regexes import MESES, MESES_ESP
+from corteconstitucional.regexes import MESES_ESP
 
 fijacion = "Fallo.Fijación Edicto"
 aprobacion = "Fallo.Aprobación Proyecto"
@@ -23,13 +23,13 @@ def no_leading_zeros(s):
         s = s[1:]
     return s
 
-def fix_sentencia(s):
+def fix_sentencia(s:str)->str:
     assert s.startswith("C")
     if s[1]!="-":
         s = "C-"+s[1:]
     return s
 
-def flatten_expedientes(d):
+def flatten_expedientes(d:Dict)->Generator:
     tables = d.pop("tables")
     exp2fechas = {t["expediente"]:t["fechas"] for t in tables }
     for exp, fechas in exp2fechas.items():
@@ -66,7 +66,7 @@ def flatten_expedientes(d):
         yield tati_datum
 
 
-def build_dataframe(merged_data):
+def build_dataframe(merged_data:List)->DataFrame:
     rows = (r for d in merged_data
             for r in flatten_expedientes(d)
             if r[ANO]>=2015)
@@ -83,3 +83,4 @@ if __name__ == '__main__':
     for _,d in consecutive_edicto_no_step.iterrows():
         print(f"year: {d[ANO]}; no: {d[NO_EDICTO]-1}")
     df.to_csv("tilo_table.csv",sep="\t",index=False)
+

@@ -1,17 +1,11 @@
-from collections import defaultdict
-from dataclasses import dataclass, asdict
-from datetime import datetime
+from dataclasses import dataclass
 
-import regex
-from typing import List
-from pathlib import Path
-
-import os
 import pandas
-from tqdm import tqdm
-from util import data_io
+import regex
+from datetime import datetime
+from typing import Dict, List
 
-from corteconstitucional.parse_edictos import generate_edictos, Edicto
+from corteconstitucional.parse_edictos import Edicto
 
 
 @dataclass(frozen=True, eq=True)
@@ -35,7 +29,7 @@ def parse_date(s: str):
     return date.strftime("%m/%d/%Y")
 
 
-def parse_table(raw_datum):
+def parse_table(raw_datum:Dict)->TableDatum:
     html = raw_datum["html"]
     dfs = pandas.read_html(html)
     assert len(dfs) <= 2
@@ -58,4 +52,5 @@ def edicto_id(e:Edicto):
 
 if __name__ == "__main__":
     assert False # see merge_edictos_proceso_tables.py
+
 

@@ -1,4 +1,5 @@
 import regex
+
 from corteconstitucional.regexes import (
     anything,
     num_regex,
@@ -20,7 +21,7 @@ edicto_texts = [
 year_pattern = regex.compile(fr"\d{{4}}")
 
 
-def parse_edicto_date(text):
+def parse_edicto_date(text:str):
     m = edicto_date_pattern.search(text)
     if m is not None:
         s = text[m.start() : m.end()]

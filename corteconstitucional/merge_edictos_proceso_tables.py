@@ -1,10 +1,9 @@
 from dataclasses import asdict
 
 import os
-
 from pathlib import Path
 from tqdm import tqdm
-
+from typing import List
 from util import data_io
 from util.util_methods import merge_dicts
 
@@ -13,9 +12,9 @@ from corteconstitucional.parse_proceso_tables import parse_table
 
 
 def merge_edictos_proceso_tables(
-        edictos,
+        edictos:List,
         data_path=f"{os.environ['HOME']}/data/corteconstitucional/procesos_tables"
-    ):
+    )->List:
     raw_data = list(
         data_io.read_json(str(file)) for file in tqdm(Path(data_path).glob("*.json"))
     )
@@ -36,3 +35,4 @@ if __name__ == "__main__":
     edictos = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
     merged_data = merge_edictos_proceso_tables(edictos)
     data_io.write_jsonl("/tmp/merged_edictos2tables.jsonl", merged_data)
+

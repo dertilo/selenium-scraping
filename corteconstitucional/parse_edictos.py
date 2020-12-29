@@ -1,4 +1,6 @@
 from collections import defaultdict
+
+from typing import Tuple
 from datetime import datetime
 
 import html2text
@@ -85,7 +87,7 @@ for f in [
         os.remove(f)
 
 
-def reformat_date(date):
+def reformat_date(date:str)->str:
     return datetime.strftime(datetime.strptime(date, "%m/%d/%Y"), "%d/%m/%Y")
 
 
@@ -134,7 +136,7 @@ def extract_date(string: str):
         return None
 
 
-def get_sentencia_span(m):
+def get_sentencia_span(m)->Tuple[int,int,str]:
     outer_start = m.start()
     im = sentencia_code_pattern.search(m.group())
     return outer_start + im.start(), outer_start + im.end(), im.group()
@@ -266,7 +268,7 @@ def parse_pdf(pdf_file) -> str:
     return text
 
 
-def parse_edictos(save=True):
+def parse_edictos(save=True)->List:
     data = list(tqdm(generate_edictos()))
     # data = [Edicto(**d) for d in data_io.read_jsonl("edictos.jsonl")]
     unique_data = list(set(data))
@@ -285,3 +287,4 @@ if __name__ == "__main__":
     2193it [00:48, 45.15it/s]
     unique: 2181
     """
+

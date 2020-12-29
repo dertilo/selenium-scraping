@@ -1,13 +1,12 @@
 import traceback
 
-from time import sleep
-
 import os
 import shutil
-from typing import List, Dict
-
 from bs4 import BeautifulSoup
+from selenium.webdriver.chrome.webdriver import WebDriver
+from time import sleep
 from tqdm import tqdm
+from typing import Generator, List
 from util import data_io
 
 from common import build_chrome_driver
@@ -30,12 +29,12 @@ def get_hrefs(url, wd):
 
 
 def generate_raw_docs(
-    old_docs: List[Dict],
-    not_yet_done_hrefs: List[str],
-    wd,
-    download_dir,
+    old_docs: List,
+    not_yet_done_hrefs: List,
+    wd:WebDriver,
+    download_dir:str,
     redo_errors=False,
-):
+)->Generator:
     """
     raw cause they can be pdfs containig one edicto
     or HTMLs containing multiple edictos
@@ -138,3 +137,4 @@ def download_edictos(
 
 if __name__ == "__main__":
     download_edictos()
+

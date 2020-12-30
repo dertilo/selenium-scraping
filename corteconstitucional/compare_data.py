@@ -16,6 +16,7 @@ from corteconstitucional.regexes import MESES_ESP
 def same_sentencia_code(a, b):
     return fix_sentencia(a) == fix_sentencia(b)
 
+
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
 
@@ -114,27 +115,29 @@ if __name__ == "__main__":
     distances_json = "/tmp/distances.json"
 
     if not os.path.isfile(distances_json):
-        for i,tilo in tqdm(enumerate(tilo_data)):
+        for i, tilo in tqdm(enumerate(tilo_data)):
             for ii, tati in enumerate(tati_data):
-                distances[i][ii]=Levenshtein.distance(str(tilo), str(tati))
+                distances[str(i)][str(ii)] = Levenshtein.distance(str(tilo), str(tati))
         data_io.write_json(distances_json, distances)
     else:
         distances = data_io.read_json(distances_json)
 
-
     mapping = []
-    for i,tilo in tqdm(enumerate(tilo_data)):
-        kk,dist = min([(ii,d) for ii,d in distances[i].items()],key=lambda x:x[1])
-        mapped = {"tilo":tilo,"dist":dist}
-        if dist<10:
-            mapped["tati"]= tati_data[kk]
+    for i, tilo in tqdm(enumerate(tilo_data)):
+        kk, dist = min(
+            [(int(ii), d) for ii, d in distances[str(i)].items()], key=lambda x: x[1]
+        )
+        mapped = {"tilo": tilo, "dist": dist}
+        if dist < 10:
+            mapped["tati"] = tati_data[kk]
         mapping.append(mapped)
-    def build_line(d,k):
-        return "\t".join([str(x) for x in d.get(k,{}).values()])
+
+    def build_line(d, k):
+        return "\t".join([str(x) for x in d.get(k, {}).values()])
 
     # data_io.write_jsonl("/tmp/mapping.jsonl",mapping)
-    data_io.write_lines("tilo_mapped.csv",[build_line(m,"tilo") for m in mapping])
-    data_io.write_lines("tati_mapped.csv",(build_line(m,"tati") for m in mapping))
+    data_io.write_lines("tilo_mapped.csv", [build_line(m, "tilo") for m in mapping])
+    data_io.write_lines("tati_mapped.csv", (build_line(m, "tati") for m in mapping))
     # pd.DataFrame([m["tilo"] for m in mapping]).to_csv(f"tilo_mapped.csv",sep="\t")
     # pd.DataFrame([m.get("tati",{}) for m in mapping]).to_csv(f"tati_mapped.csv",sep="\t")
     # data_io.write_jsonl("tilo.jsonl",[m["tilo"] for m in mapping])

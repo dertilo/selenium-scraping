@@ -15,7 +15,7 @@ from corteconstitucional.regexes import MESES_ESP
 fijacion = "Fallo.Fijación Edicto"
 aprobacion = "Fallo.Aprobación Proyecto"
 radicacion = "Radicación"
-acumulada = "Acumulada"
+ACUMULADA = "Acumulada"
 
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
@@ -40,7 +40,7 @@ def flatten_expedientes(d:Dict)->Generator:
         dd = defaultdict(list)
         for f in fechas:
             etapa = f["Etapa"]
-            if etapa in [fijacion,aprobacion,radicacion,acumulada]:
+            if etapa in [fijacion, aprobacion, radicacion, ACUMULADA]:
                 actuacion = f[ACTUACION_SECRETARIA]
                 dd[etapa].append(actuacion)
         dd[radicacion] = dd[radicacion][0]
@@ -50,10 +50,7 @@ def flatten_expedientes(d:Dict)->Generator:
         year = int(datum["edicto_year"])
         mes_name = MESES_ESP[edicto_date.month-1].capitalize()
         proceso,expediente = datum["expediente"].split("-")
-        if acumulada in datum.keys():
-            fecha_radicacion = datum[acumulada][0]
-        else:
-            fecha_radicacion = datum[radicacion]
+
 
         tati_datum = {
             ANO:year,
@@ -62,10 +59,10 @@ def flatten_expedientes(d:Dict)->Generator:
             "Proceso": proceso ,
             "Expediente":int(expediente),
             "Sentencia": fix_sentencia(datum["sentencia"]),
-            "Fecha Radicación":reformat_date(fecha_radicacion),
+            "Fecha Radicación":reformat_date(datum[radicacion]),
             "Fecha Decisión":datum["sentencia_date"],
             "Fijación Edicto": reformat_date(datum["edicto_date"]),
-
+            ACUMULADA: datum[ACUMULADA][0] if ACUMULADA in datum else None
         }
         yield tati_datum
 

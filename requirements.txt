@@ -5,3 +5,4 @@ util@git+https://github.com/dertilo/util.git#egg=util
 beautifulsoup4
 tqdm
 regex
+python-levenshtein

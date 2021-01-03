@@ -99,29 +99,21 @@ def normalize_datum(d):
     return datum
 
 
-if __name__ == "__main__":
-    raw_tati_data = load_csv_data("tati_table.csv")
+def compare_data():
+    global tati_data, tilo_data
+    base_dir = "corteconstitucional"
+
+    raw_tati_data = load_csv_data(f"{base_dir}/tati_table.csv")
     tati_data = list(
         filter(lambda x: x is not None, map(normalize_datum, raw_tati_data))
     )
     print(f"tati-data: {len(tati_data)} of {len(raw_tati_data)} are valid")
-    raw_tilo_data = load_csv_data("tilo_table.csv")
+    raw_tilo_data = load_csv_data(f"{base_dir}/tilo_table.csv")
     tilo_data = list(
         filter(lambda x: x is not None, map(normalize_datum, raw_tilo_data))
     )
     print(f"tilo-data: {len(tilo_data)} of {len(raw_tilo_data)} are valid")
-
-    distances = defaultdict(dict)
-    distances_json = "/tmp/distances.json"
-
-    if not os.path.isfile(distances_json):
-        for i, tilo in tqdm(enumerate(tilo_data)):
-            for ii, tati in enumerate(tati_data):
-                distances[str(i)][str(ii)] = Levenshtein.distance(str(tilo), str(tati))
-        data_io.write_json(distances_json, distances)
-    else:
-        distances = data_io.read_json(distances_json)
-
+    distances = calc_distances(tati_data, tilo_data)
     mapping = []
     for i, tilo in tqdm(enumerate(tilo_data)):
         kk, dist = min(
@@ -136,10 +128,27 @@ if __name__ == "__main__":
         return "\t".join([str(x) for x in d.get(k, {}).values()])
 
     # data_io.write_jsonl("/tmp/mapping.jsonl",mapping)
-    data_io.write_lines("tilo_mapped.csv", [build_line(m, "tilo") for m in mapping])
-    data_io.write_lines("tati_mapped.csv", (build_line(m, "tati") for m in mapping))
+    data_io.write_lines(f"{base_dir}/tilo_mapped.csv", [build_line(m, "tilo") for m in mapping])
+    data_io.write_lines(f"{base_dir}/tati_mapped.csv", (build_line(m, "tati") for m in mapping))
     # pd.DataFrame([m["tilo"] for m in mapping]).to_csv(f"tilo_mapped.csv",sep="\t")
     # pd.DataFrame([m.get("tati",{}) for m in mapping]).to_csv(f"tati_mapped.csv",sep="\t")
     # data_io.write_jsonl("tilo.jsonl",[m["tilo"] for m in mapping])
     # data_io.write_jsonl("tati.jsonl",[m.get("tati",{}) for m in mapping])
     # find_tilo_in_tati()
+
+
+def calc_distances(tati_data, tilo_data):
+    distances = defaultdict(dict)
+    distances_json = "/tmp/distances.json"
+    if not os.path.isfile(distances_json):
+        for i, tilo in tqdm(enumerate(tilo_data)):
+            for ii, tati in enumerate(tati_data):
+                distances[str(i)][str(ii)] = Levenshtein.distance(str(tilo), str(tati))
+        data_io.write_json(distances_json, distances)
+    else:
+        distances = data_io.read_json(distances_json)
+    return distances
+
+
+if __name__ == "__main__":
+    compare_data()

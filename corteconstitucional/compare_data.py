@@ -1,12 +1,12 @@
-import os
 from collections import defaultdict
 
 import Levenshtein
-import numpy
+import os
 import pandas as pd
+from pandas.core.frame import DataFrame
 from pprint import pprint
 from tqdm import tqdm
-
+from typing import Dict, List, Any
 from util import data_io
 
 from corteconstitucional.build_csv import fix_sentencia
@@ -32,11 +32,11 @@ def build_id(d):
     return eid
 
 
-def to_datetime(df, key):
+def to_datetime(df:DataFrame, key:str):
     df[key] = pd.to_datetime(df[key])
 
 
-def load_csv_data(file="tati_table.csv"):
+def load_csv_data(file:str="tati_table.csv")->List[Dict]:
     df = pd.read_csv(file, sep="\t")
     fecha_radicacion = "Fecha Radicación"
     fecha_decision = "Fecha Decisión"
@@ -74,7 +74,7 @@ def find_tilo_in_tati():
     """
 
 
-def normalize_datum(d):
+def normalize_datum(d:Dict[str,Any])->Dict[str,Any]:
     try:
         year = int(d[ANO])
         assert year <= 2021 and year > 1990
@@ -124,7 +124,7 @@ def compare_data():
             mapped["tati"] = tati_data[kk]
         mapping.append(mapped)
 
-    def build_line(d, k):
+    def build_line(d:Dict[str,Any], k:str)->str:
         return "\t".join([str(x) for x in d.get(k, {}).values()])
 
     # data_io.write_jsonl("/tmp/mapping.jsonl",mapping)
@@ -137,7 +137,7 @@ def compare_data():
     # find_tilo_in_tati()
 
 
-def calc_distances(tati_data, tilo_data):
+def calc_distances(tati_data:List[Dict], tilo_data:List[Dict])->Dict[str,Dict]:
     distances = defaultdict(dict)
     distances_json = "/tmp/distances.json"
     if not os.path.isfile(distances_json):
@@ -152,3 +152,4 @@ def calc_distances(tati_data, tilo_data):
 
 if __name__ == "__main__":
     compare_data()
+

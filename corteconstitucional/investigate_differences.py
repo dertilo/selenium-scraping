@@ -24,15 +24,17 @@ def take_proceso_table_screenshots(diffs: Iterable):
     base_url = "https://www.corteconstitucional.gov.co/secretaria/"
     os.makedirs(data_path, exist_ok=True)
     download_path = f"{data_path}/downloads"
-    wd = build_chrome_driver(download_path, headless=False, window_size=(1080, 1080))
+    wd = build_chrome_driver(download_path, headless=True, window_size=(1080, 1080))
 
     for d in tqdm(diffs):
         search_id = f"{d['tilo'][PROCESO]}-{d['tilo'][EXPEDIENTE]}"
         try:
-            fire_search(base_url, search_id, wd)
-            name = prepare_for_screenshot(wd)
             png_file = f"{data_path}/{search_id}.png"
-            wd.save_screenshot(png_file)
+            if not os.path.isfile(png_file):
+                print(f"screen-shotting: {search_id}")
+                fire_search(base_url, search_id, wd)
+                prepare_for_screenshot(wd)
+                wd.save_screenshot(png_file)
             yield d, png_file
         except BaseException as e:
             print(f"{search_id} fucked it up!")
@@ -123,20 +125,11 @@ if __name__ == "__main__":
         for d in diffs
         if "tati" in d and d["tilo"][FECHA_RADICACION] != d["tati"][FECHA_RADICACION]
     ]
-
+    print(f"radicacion-differences: {len(diff_radicacion)}")
     markdown_dir = f"{data_path}/markdowns"
     os.makedirs(markdown_dir, exist_ok=True)
 
-    unprocessed_diffs = list(
-        d
-        for d in diff_radicacion
-        if not os.path.isfile(f"{markdown_dir}/{build_id(d['tilo'])}.md")
-    )
-
-    print(f"already processed {len(diff_radicacion)-len(unprocessed_diffs)}")
-    print(f"got {len(unprocessed_diffs)} unprocessed_diffs")
-
-    for eid, md in generate_markdown_sections(unprocessed_diffs):
+    for eid, md in generate_markdown_sections(diff_radicacion):
         data_io.write_file(f"{markdown_dir}/{eid}.md", md)
 
     create_report_pdf(markdown_dir, data_path)

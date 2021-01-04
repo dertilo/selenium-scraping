@@ -12,15 +12,13 @@ from typing import Dict, List, Any
 from util import data_io
 
 from corteconstitucional.build_csv import fix_sentencia
+from corteconstitucional.common import ANO, NO_EDICTO, load_csv_data, FIJACION_EDICTO, \
+    FECHA_DECISION, FECHA_RADICACION
 from corteconstitucional.regexes import MESES_ESP
 
 
 def same_sentencia_code(a, b):
     return fix_sentencia(a) == fix_sentencia(b)
-
-
-ANO = "Año"
-NO_EDICTO = "Nro. Edicto"
 
 
 def build_id(d):
@@ -36,18 +34,6 @@ def build_id(d):
 
 def to_datetime(df: DataFrame, key: str):
     df[key] = pd.to_datetime(df[key])
-
-
-def load_csv_data(file: str = "tati_table.csv") -> List[Dict]:
-    df = pd.read_csv(file, sep="\t")
-    fecha_radicacion = "Fecha Radicación"
-    fecha_decision = "Fecha Decisión"
-    fijacion_edicto = "Fijación Edicto"  # WTF there is a space!
-    for k in [fecha_decision, fecha_radicacion, fijacion_edicto]:
-        to_datetime(df, k)
-
-    data = df.to_dict("records")
-    return data
 
 
 def find_tilo_in_tati(tilo_data, tati_data):
@@ -92,9 +78,9 @@ def normalize_datum(d: Dict[str, Any]) -> Union[None, Dict[str, Any]]:
             "Proceso": proceso,
             "Expediente": int(d["Expediente"]),
             "Sentencia": fix_sentencia(d["Sentencia"]),
-            "Fecha Radicación": d["Fecha Radicación"].strftime("%d/%m/%Y"),
-            "Fecha Decisión": d["Fecha Decisión"].strftime("%d/%m/%Y"),
-            "Fijación Edicto": d["Fijación Edicto"].strftime("%d/%m/%Y"),
+            FECHA_RADICACION: d["Fecha Radicación"].strftime("%d/%m/%Y"),
+            FECHA_DECISION: d["Fecha Decisión"].strftime("%d/%m/%Y"),
+            FIJACION_EDICTO: d["Fijación Edicto"].strftime("%d/%m/%Y"),
         }
     except Exception:
         datum = None
@@ -166,4 +152,9 @@ def calc_distances(tati_data: List[Dict], tilo_data: List[Dict]) -> Dict[str, Di
 
 
 if __name__ == "__main__":
-    compare_data()
+
+    base_dir = "corteconstitucional"
+    tati_data, tilo_data = read_data(base_dir)
+    distances = calc_distances(tati_data, tilo_data)
+
+    mapping = build_mapping(distances, tati_data, tilo_data)

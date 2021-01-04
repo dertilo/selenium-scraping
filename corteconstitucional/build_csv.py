@@ -8,17 +8,12 @@ from typing import Dict, Generator, List
 from util import data_io
 from util.util_methods import merge_dicts
 
+from corteconstitucional.common import FIJACION_EDICTO, FECHA_DECISION, \
+    FECHA_RADICACION, fijacion, aprobacion, radicacion, ACUMULADA, ANO, NO_EDICTO
 from corteconstitucional.parse_edictos import reformat_date
 from corteconstitucional.parse_proceso_tables import ACTUACION_SECRETARIA
 from corteconstitucional.regexes import MESES_ESP
 
-fijacion = "Fallo.Fijación Edicto"
-aprobacion = "Fallo.Aprobación Proyecto"
-radicacion = "Radicación"
-ACUMULADA = "Acumulada"
-
-ANO = "Año"
-NO_EDICTO = "Nro. Edicto"
 
 def fix_sentencia(s:str)->str:
     s = s.replace(" ","")
@@ -59,9 +54,9 @@ def flatten_expedientes(d:Dict)->Generator:
             "Proceso": proceso ,
             "Expediente":int(expediente),
             "Sentencia": fix_sentencia(datum["sentencia"]),
-            "Fecha Radicación":reformat_date(datum[radicacion]),
-            "Fecha Decisión":datum["sentencia_date"],
-            "Fijación Edicto": reformat_date(datum["edicto_date"]),
+            FECHA_RADICACION:reformat_date(datum[radicacion]),
+            FECHA_DECISION:datum["sentencia_date"],
+            FIJACION_EDICTO: reformat_date(datum["edicto_date"]),
             ACUMULADA: datum[ACUMULADA][0] if ACUMULADA in datum else None
         }
         yield tati_datum

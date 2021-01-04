@@ -4,11 +4,15 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 
-def build_chrome_driver(download_dir: str, headless=True):
+def build_chrome_driver(download_dir: str, headless=True,window_size=(1920,1080)):
     os.makedirs(download_dir, exist_ok=True)
     options = webdriver.ChromeOptions()
     if headless:
         options.add_argument("headless")
+
+    w,h = window_size
+    options.add_argument(f"--window-size={w},{h}")
+    # driver.execute_script("document.body.style.zoom='80 %'")
     prefs = {
         "download.default_directory": download_dir,
         "plugins.always_open_pdf_externally": True, # don't open pdfs in browser but instead download them

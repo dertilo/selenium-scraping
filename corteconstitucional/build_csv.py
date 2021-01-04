@@ -25,7 +25,6 @@ def fix_sentencia(s:str)->str:
 def manual_patch(d):
     if all([d[k]==v for k,v in [(ANO,2019),("Expediente",12355), (NO_EDICTO,31)]]):
         d["Sentencia"] = 'C-046A/19'
-        print("fixed!")
     return d
 
 def flatten_expedientes(d:Dict)->Generator:
@@ -57,7 +56,7 @@ def flatten_expedientes(d:Dict)->Generator:
             FECHA_RADICACION:reformat_date(datum[radicacion]),
             FECHA_DECISION:datum["sentencia_date"],
             FIJACION_EDICTO: reformat_date(datum["edicto_date"]),
-            ACUMULADA: datum[ACUMULADA][0] if ACUMULADA in datum else None
+            ACUMULADA: reformat_date(datum[ACUMULADA][0]) if ACUMULADA in datum else None
         }
         yield tati_datum
 
@@ -77,6 +76,6 @@ if __name__ == '__main__':
     df = df.sort_values([ANO, NO_EDICTO], ascending=[True, True])
     consecutive_edicto_no_step = df[df[NO_EDICTO].diff() > 1]
     for _,d in consecutive_edicto_no_step.iterrows():
-        print(f"year: {d[ANO]}; no: {d[NO_EDICTO]-1}")
+        print(f"missing: year: {d[ANO]}; no: {d[NO_EDICTO]-1}")
     df.to_csv(f"tilo_table.csv",sep="\t",index=False)
 

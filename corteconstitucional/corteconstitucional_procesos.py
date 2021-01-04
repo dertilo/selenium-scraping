@@ -5,7 +5,7 @@ from tqdm import tqdm
 from typing import List
 from util import data_io
 
-from common import build_chrome_driver, click_it, enter_keyboard_input
+from selenium_util import build_chrome_driver, click_it, enter_keyboard_input
 
 DESDE = (
     "/html/body/div[2]/div/div[2]/div/div[11]/div/form/div[2]/div[2]/div/div[1]/input"

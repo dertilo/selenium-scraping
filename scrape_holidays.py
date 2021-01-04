@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from util import data_io
 
-from common import build_chrome_driver
+from selenium_util import build_chrome_driver
 
 
 def generate(soup, year: int):

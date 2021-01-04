@@ -5,7 +5,7 @@ from selenium import webdriver
 import pandas as pd
 from selenium.webdriver.chrome.options import Options
 
-from common import enter_keyboard_input, click_it
+from selenium_util import enter_keyboard_input, click_it
 
 co = Options()
 # chrome_options.add_argument("--headless")

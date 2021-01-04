@@ -1,7 +1,6 @@
 import pandas as pd
+from pandas import DataFrame
 from typing import List, Dict
-
-from corteconstitucional.compare_data import to_datetime
 
 ANO = "Año"
 NO_EDICTO = "Nro. Edicto"
@@ -9,6 +8,8 @@ NO_EDICTO = "Nro. Edicto"
 FECHA_RADICACION = "Fecha Radicación"
 FECHA_DECISION = "Fecha Decisión"
 FIJACION_EDICTO = "Fijación Edicto"
+PROCESO = 'Proceso'
+EXPEDIENTE = 'Expediente'
 
 fijacion = "Fallo.Fijación Edicto"
 aprobacion = "Fallo.Aprobación Proyecto"
@@ -24,3 +25,5 @@ def load_csv_data(file: str = "tati_table.csv") -> List[Dict]:
     return data
 
 
+def to_datetime(df: DataFrame, key: str):
+    df[key] = pd.to_datetime(df[key])

@@ -9,7 +9,7 @@ from tqdm import tqdm
 from typing import Generator, List
 from util import data_io
 
-from common import build_chrome_driver
+from selenium_util import build_chrome_driver
 
 
 def is_404(html):

@@ -4,8 +4,6 @@ from typing import Union
 
 import Levenshtein
 import os
-import pandas as pd
-from pandas.core.frame import DataFrame
 from pprint import pprint
 from tqdm import tqdm
 from typing import Dict, List, Any
@@ -30,10 +28,6 @@ def build_id(d):
     except Exception:
         eid = None
     return eid
-
-
-def to_datetime(df: DataFrame, key: str):
-    df[key] = pd.to_datetime(df[key])
 
 
 def find_tilo_in_tati(tilo_data, tati_data):

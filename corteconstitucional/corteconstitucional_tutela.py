@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 from util import data_io
-from common import build_chrome_driver, enter_keyboard_input, click_it
+from selenium_util import build_chrome_driver, enter_keyboard_input, click_it
 
 
 class Hit(NamedTuple):

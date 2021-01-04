@@ -6,7 +6,12 @@ from typing import Iterable, Dict, Any
 from util import data_io
 
 from corteconstitucional.common import FECHA_RADICACION, PROCESO, EXPEDIENTE
-from corteconstitucional.compare_data import build_mapping, calc_distances, read_data
+from corteconstitucional.compare_data import (
+    build_mapping,
+    calc_distances,
+    read_data,
+    build_id,
+)
 from corteconstitucional.corteconstitucional_procesos import (
     fire_search,
     FIRST_ROW_POPUP,
@@ -66,8 +71,8 @@ def generate_markdown_sections(diffs):
             for x in zip(*[(k, format_string(str(v), k)) for k, v in d["tilo"].items()])
         ]
 
-        colnames.insert(0,"source")
-        tilo_values.insert(0,"tilo")
+        colnames.insert(0, "source")
+        tilo_values.insert(0, "tilo")
 
         tati_values = ["juan/tati"] + [
             format_string(str(d["tati"][k]), k) for k in colnames[1:]
@@ -78,14 +83,25 @@ def generate_markdown_sections(diffs):
         tati_row = " | ".join(tati_values)
         eid = f"{d['tilo'][PROCESO]}-{d['tilo'][EXPEDIENTE]}"
         markdown = (
-            f"\n### {eid} different {FECHA_RADICACION}\n"
+            f"\n### {eid} different: {FECHA_RADICACION}\n"
             f"{header}\n"
             f"{line}\n"
             f"{tilo_row}\n"
             f"{tati_row}\n\n"
             f"![image-{eid}]({png_file.split('/')[-1]})"
         )
-        yield markdown
+        eid = build_id(d["tilo"])
+        yield eid, markdown
+
+
+def create_report_pdf(markdown_dir, data_path):
+    for file in os.listdir(markdown_dir):
+        os.system(f"grip {markdown_dir}/{file} --export {data_path}/html.html")
+        os.system(
+            f"wkhtmltopdf --enable-local-file-access -L 20 -R 20 {data_path}/html.html {data_path}/{file.replace('.md', '.pdf')}"
+        )
+    pdfs = [f"{data_path}/{f}" for f in os.listdir(data_path) if f.endswith(".pdf")]
+    os.system(f"pdfunite {' '.join(pdfs)} radicacion_report.pdf")
 
 
 if __name__ == "__main__":
@@ -108,14 +124,19 @@ if __name__ == "__main__":
         if "tati" in d and d["tilo"][FECHA_RADICACION] != d["tati"][FECHA_RADICACION]
     ]
 
-    radication_diff_md = f"{data_path}/differences.md"
-    if os.path.isfile(radication_diff_md):
-        os.remove(radication_diff_md)
+    markdown_dir = f"{data_path}/markdowns"
+    os.makedirs(markdown_dir, exist_ok=True)
 
-    for s in generate_markdown_sections(diff_radicacion[:3]):
-        data_io.write_file(radication_diff_md, s, mode="ab")
-
-    os.system(f"grip {radication_diff_md} --export {data_path}/html.html")
-    os.system(
-        f"wkhtmltopdf --enable-local-file-access -L 20 -R 20 {data_path}/html.html differences.pdf"
+    unprocessed_diffs = list(
+        d
+        for d in diff_radicacion
+        if not os.path.isfile(f"{markdown_dir}/{build_id(d['tilo'])}.md")
     )
+
+    print(f"already processed {len(diff_radicacion)-len(unprocessed_diffs)}")
+    print(f"got {len(unprocessed_diffs)} unprocessed_diffs")
+
+    for eid, md in generate_markdown_sections(unprocessed_diffs):
+        data_io.write_file(f"{markdown_dir}/{eid}.md", md)
+
+    create_report_pdf(markdown_dir, data_path)

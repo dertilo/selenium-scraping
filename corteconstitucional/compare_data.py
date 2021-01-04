@@ -11,7 +11,7 @@ from util import data_io
 
 from corteconstitucional.build_csv import fix_sentencia
 from corteconstitucional.common import ANO, NO_EDICTO, load_csv_data, FIJACION_EDICTO, \
-    FECHA_DECISION, FECHA_RADICACION
+    FECHA_DECISION, FECHA_RADICACION, PROCESO, EXPEDIENTE
 from corteconstitucional.regexes import MESES_ESP
 
 
@@ -22,9 +22,9 @@ def same_sentencia_code(a, b):
 def build_id(d):
 
     try:
-        proceso = d["Proceso"]
+        proceso = d[PROCESO]
         assert isinstance(proceso, str)
-        eid = f"{int(d[ANO])}-{int(d[NO_EDICTO])}-{proceso}-{int(d['Expediente'])}"
+        eid = f"{int(d[ANO])}-{int(d[NO_EDICTO])}-{proceso}-{int(d[EXPEDIENTE])}"
     except Exception:
         eid = None
     return eid

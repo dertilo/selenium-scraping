@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Tuple
+from typing import Union
 
 import Levenshtein
 import os
@@ -74,7 +76,7 @@ def find_tilo_in_tati(tilo_data, tati_data):
     """
 
 
-def normalize_datum(d: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_datum(d: Dict[str, Any]) -> Union[None, Dict[str, Any]]:
     try:
         year = int(d[ANO])
         assert year <= 2021 and year > 1990
@@ -109,7 +111,7 @@ def compare_data():
     dump_mappings(base_dir, mapping)
 
 
-def read_data(base_dir):
+def read_data(base_dir: str) -> Tuple[List, List]:
     raw_tati_data = load_csv_data(f"{base_dir}/tati_table.csv")
     tati_data = list(
         filter(lambda x: x is not None, map(normalize_datum, raw_tati_data))
@@ -123,7 +125,9 @@ def read_data(base_dir):
     return tati_data, tilo_data
 
 
-def build_mapping(distances, tati_data, tilo_data):
+def build_mapping(
+    distances: Dict[str, Dict], tati_data: List[Dict], tilo_data: List[Dict]
+) -> List[Dict]:
     mapping = []
     for i, tilo in tqdm(enumerate(tilo_data)):
         kk, dist = min(
@@ -136,7 +140,7 @@ def build_mapping(distances, tati_data, tilo_data):
     return mapping
 
 
-def dump_mappings(base_dir, mapping):
+def dump_mappings(base_dir: str, mapping: List[Dict]):
     def build_line(d: Dict[str, Any], k: str) -> str:
         return "\t".join([str(x) for x in d.get(k, {}).values()])
 

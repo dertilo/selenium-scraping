@@ -18,12 +18,9 @@ ACUMULADA = "Acumulada"
 
 def load_csv_data(file: str = "tati_table.csv") -> List[Dict]:
     df = pd.read_csv(file, sep="\t")
-    for k in [FECHA_DECISION, FECHA_RADICACION, FIJACION_EDICTO]:
-        to_datetime(df, k)
-
     data = df.to_dict("records")
     return data
 
 
 def to_datetime(df: DataFrame, key: str):
-    df[key] = pd.to_datetime(df[key])
+    df[key] = pd.to_datetime(df[key],dayfirst=False)

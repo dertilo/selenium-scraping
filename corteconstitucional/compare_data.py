@@ -1,4 +1,6 @@
 from collections import defaultdict
+from datetime import datetime
+
 from typing import Tuple
 from typing import Union
 
@@ -55,6 +57,11 @@ def find_tilo_in_tati(tilo_data, tati_data):
     shit_counter: 4
     """
 
+def reformat_date(date:str)->str:
+    try:
+        return datetime.strftime(datetime.strptime(date, "%d/%m/%Y"), "%d/%m/%Y")
+    except Exception:
+        return datetime.strftime(datetime.strptime(date, "%d/%m/%y"), "%d/%m/%Y")
 
 def normalize_datum(d: Dict[str, Any]) -> Union[None, Dict[str, Any]]:
     try:
@@ -72,9 +79,9 @@ def normalize_datum(d: Dict[str, Any]) -> Union[None, Dict[str, Any]]:
             "Proceso": proceso,
             "Expediente": int(d["Expediente"]),
             "Sentencia": fix_sentencia(d["Sentencia"]),
-            FECHA_RADICACION: d["Fecha Radicación"].strftime("%d/%m/%Y"),
-            FECHA_DECISION: d["Fecha Decisión"].strftime("%d/%m/%Y"),
-            FIJACION_EDICTO: d["Fijación Edicto"].strftime("%d/%m/%Y"),
+            FECHA_RADICACION: reformat_date(d["Fecha Radicación"]),
+            FECHA_DECISION: reformat_date(d["Fecha Decisión"]),
+            FIJACION_EDICTO: reformat_date(d["Fijación Edicto"]),
         }
     except Exception:
         datum = None
@@ -146,9 +153,9 @@ def calc_distances(tati_data: List[Dict], tilo_data: List[Dict]) -> Dict[str, Di
 
 
 if __name__ == "__main__":
-
-    base_dir = "corteconstitucional"
-    tati_data, tilo_data = read_data(base_dir)
-    distances = calc_distances(tati_data, tilo_data)
-
-    mapping = build_mapping(distances, tati_data, tilo_data)
+    compare_data()
+    # base_dir = "corteconstitucional"
+    # tati_data, tilo_data = read_data(base_dir)
+    # distances = calc_distances(tati_data, tilo_data)
+    #
+    # mapping = build_mapping(distances, tati_data, tilo_data)
